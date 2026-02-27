@@ -36,7 +36,7 @@ The core design philosophy of coroTracer is the **"absolute physical isolation o
 
 ## 🚀 Core Features
 
-* **Language-Agnostic Observability Contract**: Abandons RPC, utilizing an underlying physical memory contract (cTP) strictly aligned to 1024 bytes for cross-process communication. (👉 [See cTP Memory Protocol Specification for details](docs/cTP_Protocol.md))
+* **Language-Agnostic Observability Contract**: Abandons RPC, utilizing an underlying physical memory contract (cTP) strictly aligned to 1024 bytes for cross-process communication. (👉 [See cTP Memory Protocol Specification for details](docs/cTP.md))
 * **Extreme Zero-Copy**: The probe writes to physical memory, and the Go engine reads from physical memory, achieving zero serialization overhead across the entire link.
 * **Lock-Free Harvesting Engine**:
     * **Cache Line Immunity**: Event slots are strictly aligned to 64 bytes, completely eliminating multi-threaded false sharing.
@@ -186,3 +186,5 @@ struct alignas(64) Epoch {
 1. **Incremental Allocation**: The probe obtains the `AllocatedCount` via the `fetch_add` atomic operation to get its exclusive `StationData` index, achieving lock-free allocation of coroutine slots.
 2. **Safe Overwrite**: Since `slots` only has 8 positions, the probe uses `current_seq % 8` for circular overwrite writing.
 3. **Seq Barrier**: After populating the other fields of the `Epoch`, the probe must finally update `seq` atomically using `std::memory_order_release`. The Go engine perceives new events by polling changes in `seq`.
+
+> If you want to contact me, this is my email: lixia.chat@outlook.com
