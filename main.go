@@ -9,7 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"coroTracer/deepdive"
 	"coroTracer/engine" //
+	"coroTracer/export"
 )
 
 func main() {
@@ -19,7 +21,31 @@ func main() {
 	shmPath := flag.String("shm", "/tmp/corotracer.shm", "Path to shared memory file")
 	sockPath := flag.String("sock", "/tmp/corotracer.sock", "Path to Unix Domain Socket")
 	logPath := flag.String("out", "trace_output.jsonl", "Output JSONL file path")
+	deepDiveMode := flag.Bool("deepdive", false, "Run offline analysis on an existing JSONL trace file")
+	htmlExportMode := flag.Bool("html", false, "Export trace to interactive HTML dashboard")
 	flag.Parse()
+
+	// 🔀 分支逻辑：进入深潜分析模式
+	if *deepDiveMode {
+		inPath := *logPath // 复用 -out 参数作为输入文件
+		outMd := "coro_report.md"
+
+		fmt.Printf("🚀 Starting DeepDive Analysis on %s...\n", inPath)
+		// 调用 deepdive 包里的函数
+		if err := deepdive.RunDeepDive(inPath, outMd); err != nil {
+			log.Fatalf("DeepDive failed: %v", err)
+		}
+		os.Exit(0)
+	}
+
+	if *htmlExportMode {
+		inPath := *logPath
+		outHtml := "coro_dashboard.html"
+		if err := export.GenerateHTML(inPath, outHtml); err != nil {
+			log.Fatalf("HTML Export failed: %v", err)
+		}
+		os.Exit(0)
+	}
 
 	if *cmdStr == "" {
 		log.Fatal("Error: -cmd parameter is required. Example: ./coroTracer -n 100 -cmd './redis-test'")
