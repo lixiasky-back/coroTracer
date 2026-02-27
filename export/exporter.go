@@ -64,7 +64,7 @@ func GenerateHTML(jsonlPath string, htmlPath string) error {
 			statusTag = " <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span>"
 		}
 
-		// 左侧菜单项
+		// Left menu item
 		sbNav.WriteString(fmt.Sprintf(
 			`<div class="nav-item" onclick="openCoro('%d')">
 				<div class="nav-id">Instance #%d%s</div>
@@ -88,7 +88,7 @@ func GenerateHTML(jsonlPath string, htmlPath string) error {
 			}
 		}
 
-		// 右侧 Tab 页面（注意这里注册了全局配置，而不立即渲染图表）
+		// Right Tab page (Note: Global configuration is registered here, but the chart is not rendered immediately)
 		sbContent.WriteString(fmt.Sprintf(`
 			<div id="coro-%d" class="tab-pane">
 				<div class="panel-header">
@@ -168,7 +168,6 @@ const htmlSkeleton = `
             var pane = document.getElementById('coro-' + id);
             pane.classList.add('active');
 
-            // 核心修复：只有在容器 display: flex 可见之后，才初始化图表！
             if (!activeCharts[id] && window.chartConfigs && window.chartConfigs[id]) {
                 var dom = document.getElementById('dom-' + id);
                 var chart = echarts.init(dom, 'dark');

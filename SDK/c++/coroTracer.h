@@ -9,7 +9,7 @@
 #include <cstring>
 #include <thread>
 
-// POSIX 系统调用
+// POSIX system call
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -26,7 +26,7 @@
 namespace corotracer {
 
 // ==========================================
-// 1. 内存布局 (与 Go 端绝对对齐)
+// 1. Memory layout (absolutely aligned with the Go side)
 // ==========================================
 struct alignas(64) Epoch {
     uint64_t timestamp;      // 8
@@ -47,12 +47,12 @@ struct alignas(1024) StationData {
 
     Epoch slots[8];          // 512 Bytes (8 * 64)
 
-    // 🔴 修复 1：严格凑齐 1024 字节，拒绝编译器隐式填充
+    // 🔴 Fix 1: Strictly pad to exactly 1024 bytes, reject compiler implicit padding
     // 64 + 512 + 448 = 1024 Bytes
     char flexible[448];
 };
 
-// 🔴 修复 2：GlobalHeader 撑大到 1024 字节
+// 🔴 Fix 2: Expand GlobalHeader to 1024 bytes
 struct alignas(1024) GlobalHeader {
     uint64_t magic_number;       // 8
     uint32_t version;            // 4
@@ -62,19 +62,19 @@ struct alignas(1024) GlobalHeader {
     char _reserved[1000];        // 1024 - 24 = 1000 Bytes
 };
 
-// 全局上下文
+// Global context
 inline GlobalHeader* g_header = nullptr;
 inline StationData* g_stations = nullptr;
 inline int g_uds_fd = -1;
 
-// 获取纳秒级时间戳
+// Get the nanosecond-level timestamp
 inline uint64_t get_ns() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return static_cast<uint64_t>(ts.tv_sec) * 1000000000ULL + ts.tv_nsec;
 }
 
-// 获取绝对真实的操作系统 TID
+// Get the absolutely real operating system TID
 inline uint64_t get_tid() {
 #ifdef __APPLE__
     uint64_t tid;
@@ -87,7 +87,7 @@ inline uint64_t get_tid() {
 #endif
 }
 
-// 极速唤醒 Go 端引擎
+// Wake up the Go-side engine at extreme speed
 inline void trigger_uds_wakeup() {
     if (g_uds_fd != -1) {
         char wake_signal = '1';
@@ -96,7 +96,7 @@ inline void trigger_uds_wakeup() {
 }
 
 // ==========================================
-// 2. 协程拦截器壳子
+// 2. Coroutine interceptor wrapper
 // ==========================================
 class PromiseMixin;
 
@@ -114,7 +114,7 @@ struct TracedAwaiter {
 };
 
 // ==========================================
-// 3. 供用户继承的 Mixin
+// 3. Mixin for user inheritance
 // ==========================================
 class PromiseMixin {
 public:
@@ -166,7 +166,7 @@ public:
 };
 
 // ==========================================
-// 2.1 补充拦截器的实现
+// 2.1 Supplement the implementation of the interceptor
 // ==========================================
 template <typename InnerAwaiter>
 template <typename Promise>
@@ -182,7 +182,7 @@ auto TracedAwaiter<InnerAwaiter>::await_resume() {
 }
 
 // ==========================================
-// 4. SDK 初始化
+// 4. SDK initialization
 // ==========================================
 inline void InitTracer() {
     const char* shm_path = std::getenv("CTP_SHM_PATH");
@@ -196,7 +196,6 @@ inline void InitTracer() {
 
     int max_stations = std::atoi(max_stations_str);
 
-    // 🔴 修复 3：内存总大小和指针偏移量改为 1024
     size_t mem_size = 1024 + (max_stations * 1024);
 
     int shm_fd = ::open(shm_path, O_RDWR);
@@ -215,7 +214,6 @@ inline void InitTracer() {
 
     g_header = static_cast<GlobalHeader*>(mapped);
 
-    // 🔴 修复 4：跳过 1024 字节的 Header，精确对齐到 StationData[0]
     g_stations = reinterpret_cast<StationData*>(static_cast<char*>(mapped) + 1024);
 
     g_uds_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);

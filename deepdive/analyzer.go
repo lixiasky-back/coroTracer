@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-// TraceEvent 对应 JSONL 中的单行数据
+// TraceEvent corresponds to a single line of data in JSONL
 type TraceEvent struct {
 	ProbeID  uint64 `json:"probe_id"`
 	TID      uint64 `json:"tid"`
@@ -38,7 +38,7 @@ type Report struct {
 	LostWakeups     []*CoroState
 }
 
-// RunDeepDive 必须首字母大写，暴露给 main.go 调用
+// RunDeepDive must have an uppercase first letter to be exposed for calling in main.go
 func RunDeepDive(jsonlPath string, outMdPath string) error {
 	f, err := os.Open(jsonlPath)
 	if err != nil {
@@ -114,39 +114,39 @@ func RunDeepDive(jsonlPath string, outMdPath string) error {
 }
 
 const mdTemplate = `
-# 🔬 coroTracer 深度诊断报告 (DeepDive)
+# 🔬 coroTracer Deep Diagnostic Report (DeepDive)
 
-## 📊 概览 (Overview)
-* **总追踪协程数**: {{.TotalCoroutines}}
-* **总状态切换数**: {{.TotalEvents}}
-* **录制总时长**: {{printf "%.2f" .DurationMs}} ms
+## 📊 Overview
+* **Total Traced Coroutines**: {{.TotalCoroutines}}
+* **Total State Transitions**: {{.TotalEvents}}
+* **Total Recording Duration**: {{printf "%.2f" .DurationMs}} ms
 
 ---
 
-## 🚨 致命风险：疑似 SIGBUS / 内存损坏
-*算法判定：协程操作了 0x0 或异常地址。*
+## 🚨 Critical Risk: Suspected SIGBUS / Memory Corruption
+*Algorithm: Coroutine accessed 0x0 or invalid address.*
 
 {{if .SigbusRisks}}
-| Probe ID | 触发时间戳 (TS) | 异常地址 |
+| Probe ID | Trigger Timestamp (TS) | Abnormal Address |
 | :--- | :--- | :--- |
 {{range .SigbusRisks}}| #{{.ProbeID}} | {{.LastTS}} | **{{.LastAddr}}** |
 {{end}}
 {{else}}
-✅ 未检测到明显的地址异常。
+✅ No obvious address anomalies detected.
 {{end}}
 
 ---
 
-## 🧟‍♂️ 幽灵协程：丢失唤醒 / 疑似死锁 (Lost Wakeup)
-*算法判定：协程陷入挂起状态 (is_active=false)，直到程序结束都未被调度器重新唤醒。*
+## 🧟‍♂️ Phantom Coroutines: Lost Wakeup / Suspected Deadlock (Lost Wakeup)
+*Algorithm: Coroutine entered suspended state (is_active=false) and was never reawakened by the scheduler until program exit.*
 
 {{if .LostWakeups}}
-| Probe ID | 最后活跃时间 (TS) | 挂起前最后线程 (TID) | 挂起前指令地址 |
+| Probe ID | Last Active Time (TS) | Last Thread Before Suspend (TID) | Instruction Address Before Suspend |
 | :--- | :--- | :--- | :--- |
 {{range .LostWakeups}}| #{{.ProbeID}} | {{.LastTS}} | {{.LastTID}} | {{.LastAddr}} |
 {{end}}
 {{else}}
-✅ 未检测到丢失唤醒，所有协程均完美闭环！
+✅ No lost wakeups detected. All coroutines closed perfectly!
 {{end}}
 `
 

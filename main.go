@@ -9,13 +9,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"coroTracer/deepdive"
-	"coroTracer/engine" //
-	"coroTracer/export"
+	"github.com/lixiasky-back/coroTracer/deepdive"
+	"github.com/lixiasky-back/coroTracer/engine"
+	"github.com/lixiasky-back/coroTracer/export"
 )
 
 func main() {
-	// 1. 定义命令行参数
+	// 1. Define command-line arguments
 	n := flag.Uint("n", 128, "Number of stations (coroutines) to allocate")
 	cmdStr := flag.String("cmd", "", "Target command to execute and trace (e.g., './my_cpp_coro')")
 	shmPath := flag.String("shm", "/tmp/corotracer.shm", "Path to shared memory file")
@@ -25,13 +25,13 @@ func main() {
 	htmlExportMode := flag.Bool("html", false, "Export trace to interactive HTML dashboard")
 	flag.Parse()
 
-	// 🔀 分支逻辑：进入深潜分析模式
+	// 🔀 Branch logic: Enter in-depth analysis mode
 	if *deepDiveMode {
-		inPath := *logPath // 复用 -out 参数作为输入文件
+		inPath := *logPath // Reuse the -out parameter as the input file
 		outMd := "coro_report.md"
 
 		fmt.Printf("🚀 Starting DeepDive Analysis on %s...\n", inPath)
-		// 调用 deepdive 包里的函数
+		// Call functions from the deepdive package
 		if err := deepdive.RunDeepDive(inPath, outMd); err != nil {
 			log.Fatalf("DeepDive failed: %v", err)
 		}
@@ -54,37 +54,37 @@ func main() {
 	fmt.Printf("🚀 coroTracer Launcher Started\n")
 	fmt.Printf("📦 Allocating %d Stations (Memory: %d Bytes)\n", *n, 64+(*n*1024))
 
-	// 2. 初始化收割机引擎
+	// 2. Initialize the harvester engine
 	tracer, err := engine.NewTracerEngine(uint32(*n), *shmPath, *sockPath, *logPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize Tracer Engine: %v", err)
 	}
 	defer tracer.Close()
 
-	// 3. 在后台 Goroutine 启动收割事件循环
+	// 3. Start the harvesting event loop in a background Goroutine
 	go func() {
 		if err := tracer.Run(); err != nil {
 			log.Printf("Tracer engine exited: %v\n", err)
 		}
 	}()
 
-	// 4. 准备目标命令 (Tracee)
-	// 使用 sh -c 可以支持带参数的命令，比如 -cmd "./my_prog --threads 4"
+	// 4. Prepare the target command (Tracee)
+	// Using sh -c enables support for commands with arguments, e.g., -cmd "./my_prog --threads 4"
 	cmd := exec.Command("sh", "-c", *cmdStr)
 
-	// 🔴 核心：通过环境变量将 cTP 协议的连接信息注入给子进程
+	// 🔴 Core: Inject connection information of the cTP protocol into the child process via environment variables
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("CTP_SHM_PATH=%s", *shmPath),
 		fmt.Sprintf("CTP_SOCK_PATH=%s", *sockPath),
-		// 我们甚至可以把 n 传过去，让被测程序知道自己的并发上限
+		// We can even pass the value of n to let the tested program know its concurrency limit
 		fmt.Sprintf("CTP_MAX_STATIONS=%d", *n),
 	)
 
-	// 将子进程的输出重定向到主控台，方便调试
+	// Redirect the output of the child process to the main console for easy debugging
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// 5. 监听系统的中断信号 (Ctrl+C)，优雅退出
+	// 5. Listen for system interrupt signals (Ctrl+C) for graceful exit
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -97,7 +97,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	// 6. 正式拉起被测子进程
+	// 6. Officially launch the tested child process
 	fmt.Printf("🏃 Executing target: %s\n", *cmdStr)
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Target command exited with error: %v", err)

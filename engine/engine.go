@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"unsafe"
 
-	"coroTracer/structure"
+	"github.com/lixiasky-back/coroTracer/structure"
 )
 
 const (
-	// 🔴 核心修复：必须与 structure.GlobalHeader 保持绝对一致，占用完整的 1KB！
+	// 🔴 Core fix: Must be absolutely consistent with structure.GlobalHeader and occupy a full 1KB!
 	HeaderSize  = 1024
 	StationSize = 1024
 )
@@ -21,24 +21,24 @@ type TracerEngine struct {
 	shmFile  *os.File
 	mmapData []byte
 
-	// 内存映射指针（黑魔法零拷贝）
+	// Memory-mapped pointer (black magic zero-copy)
 	header   *structure.GlobalHeader
 	stations []structure.StationData
 
 	writer   *structure.StationWriter
 	listener net.Listener
 
-	maxStations uint32 // 动态容量
+	maxStations uint32
 	lastSeen    [][8]uint64
 }
 
-// NewTracerEngine 初始化共享内存、Socket 和日志文件
+// NewTracerEngine initializes shared memory, Socket, and log files
 func NewTracerEngine(stationCount uint32, shmPath, sockPath, logPath string) (*TracerEngine, error) {
-	// 动态计算总内存大小
+	// Dynamically calculate the total memory size
 	memSize := HeaderSize + (int(stationCount) * StationSize)
 
 	os.Remove(shmPath)
-	// 1. 创建共享内存文件并截断到精确的 memSize
+	// 1. Create a shared memory file and truncate it to the exact memSize
 	f, err := os.OpenFile(shmPath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return nil, err
@@ -47,13 +47,13 @@ func NewTracerEngine(stationCount uint32, shmPath, sockPath, logPath string) (*T
 		return nil, err
 	}
 
-	// 2. Mmap 映射
+	// 2. Mmap mapping
 	mmapData, err := syscall.Mmap(int(f.Fd()), 0, memSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. 结构体强转 (GlobalHeader 现在是 1024 字节)
+	// 3. Struct forced conversion (GlobalHeader is now 1024 bytes)
 	header := (*structure.GlobalHeader)(unsafe.Pointer(&mmapData[0]))
 	header.MagicNum = 0x434F524F54524352
 	header.Version = 1
@@ -61,17 +61,17 @@ func NewTracerEngine(stationCount uint32, shmPath, sockPath, logPath string) (*T
 	atomic.StoreUint32(&header.AllocatedCount, 0)
 	atomic.StoreUint32(&header.TracerSleeping, 0)
 
-	// 🔴 动态切片映射：完美越过 1024 字节的 Header，精确踩中 Station[0]
+	// 🔴 Dynamic slice mapping: Perfectly skip the 1024-byte Header and accurately target Station[0]
 	stations := unsafe.Slice((*structure.StationData)(unsafe.Pointer(&mmapData[HeaderSize])), stationCount)
 
-	// 4. 创建 UDS Socket
+	// 4. Create UDS Socket
 	os.Remove(sockPath)
 	listener, err := net.Listen("unix", sockPath)
 	if err != nil {
 		return nil, fmt.Errorf("listen uds failed: %v", err)
 	}
 
-	// 5. 初始化日志写入器
+	// 5. Initialize the log writer
 	writer, err := structure.NewStationWriter(logPath)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,6 @@ func (e *TracerEngine) doScan() int {
 	totalHarvested := 0
 	allocated := atomic.LoadUint32(&e.header.AllocatedCount)
 
-	// 🔴 逻辑修复：使用实例自己的 maxStations，而不是之前写死的常量
 	if allocated > e.maxStations {
 		allocated = e.maxStations
 	}
