@@ -47,7 +47,7 @@ The core design philosophy of coroTracer is the **"absolute physical isolation o
 ---
 
 ## 🛠️ Quick Start
-
+> The example folder contains the detection and analysis results of [miniredis](https://github.com/lixiasky-back/tiny_coro-build_your_own_MN_scheduler/blob/main/src/mini_redis.cpp) (in my another scheduler) performed by this tool, and it did help me find out the root cause.
 ### Step 1: Launch the Observability Engine (Launcher)
 The engine pre-allocates shared memory and the UDS Socket, and is responsible for pulling up your target program.
 
@@ -113,7 +113,6 @@ Faced with this purely logical fracture in the asynchronous state machine, coroT
 ---
 
 # 📝 coroTracer Protocol (cTP) Memory Layout Specification
-*(Suggested save path: `docs/cTP_Protocol.md`)*
 
 cTP is the core foundation for coroTracer to achieve cross-language, zero-copy observability. It is not a network protocol, but rather a **physical memory mapping (mmap) contract strictly based on byte alignment**.
 

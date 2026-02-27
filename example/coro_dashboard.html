@@ -1,0 +1,2416 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>coroTracer Full Topology Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        body { margin: 0; background: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: 350px; background: #161b22; border-right: 1px solid #30363d; display: flex; flex-direction: column; }
+        .side-head { padding: 25px; font-size: 1.2rem; font-weight: bold; color: #58a6ff; border-bottom: 1px solid #30363d; background: #010409; }
+        .nav-list { flex: 1; overflow-y: auto; }
+        .nav-item { padding: 18px 25px; border-bottom: 1px solid #30363d; cursor: pointer; transition: 0.2s; }
+        .nav-item:hover { background: #21262d; }
+        .nav-item.active { background: #30363d; border-left: 5px solid #58a6ff; }
+        .nav-id { font-family: monospace; font-weight: bold; margin-bottom: 5px; }
+        .nav-meta { font-size: 0.8rem; color: #8b949e; }
+
+        #viewport { flex: 1; position: relative; display: flex; flex-direction: column; background: #0d1117; }
+        .tab-pane { display: none; height: 100%; flex-direction: column; padding: 35px; box-sizing: border-box; overflow-y: auto; }
+        .tab-pane.active { display: flex; }
+        
+        .panel-header { margin-bottom: 30px; }
+        .info-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 20px; }
+        .info-card { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid #30363d; }
+        .info-card h4 { margin: 0; font-size: 0.75rem; color: #8b949e; text-transform: uppercase; }
+        .info-card p { margin: 10px 0 0 0; font-family: monospace; color: #58a6ff; font-size: 1.1rem; }
+        
+        .chart-area { flex: 1; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+        .placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #8b949e; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div class="side-head">🔬 coroTracer Journals</div>
+        <div class="nav-list"><div class="nav-item" onclick="openCoro('0')">
+				<div class="nav-id">Instance #0 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">115 Steps | 13 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('4342902816')">
+				<div class="nav-id">Instance #4342902816</div>
+				<div class="nav-meta">61 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('4348653600')">
+				<div class="nav-id">Instance #4348653600 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">41 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('4348660656')">
+				<div class="nav-id">Instance #4348660656 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">5 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('4372787392')">
+				<div class="nav-id">Instance #4372787392</div>
+				<div class="nav-meta">50 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('4372787792')">
+				<div class="nav-id">Instance #4372787792</div>
+				<div class="nav-meta">1 Steps | 1 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736153104')">
+				<div class="nav-id">Instance #37736153104</div>
+				<div class="nav-meta">14 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736158224')">
+				<div class="nav-id">Instance #37736158224</div>
+				<div class="nav-meta">10 Steps | 1 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736163344')">
+				<div class="nav-id">Instance #37736163344</div>
+				<div class="nav-meta">10 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736168464')">
+				<div class="nav-id">Instance #37736168464</div>
+				<div class="nav-meta">10 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736173584')">
+				<div class="nav-id">Instance #37736173584</div>
+				<div class="nav-meta">10 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736178704')">
+				<div class="nav-id">Instance #37736178704</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736183824')">
+				<div class="nav-id">Instance #37736183824</div>
+				<div class="nav-meta">6 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736188944')">
+				<div class="nav-id">Instance #37736188944</div>
+				<div class="nav-meta">2 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736194064')">
+				<div class="nav-id">Instance #37736194064</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736199184')">
+				<div class="nav-id">Instance #37736199184</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736204304')">
+				<div class="nav-id">Instance #37736204304</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736209424')">
+				<div class="nav-id">Instance #37736209424</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736214544')">
+				<div class="nav-id">Instance #37736214544</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736219664')">
+				<div class="nav-id">Instance #37736219664</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736224784')">
+				<div class="nav-id">Instance #37736224784</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736229904')">
+				<div class="nav-id">Instance #37736229904</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736235024')">
+				<div class="nav-id">Instance #37736235024</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736240144')">
+				<div class="nav-id">Instance #37736240144</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736245264')">
+				<div class="nav-id">Instance #37736245264</div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736250384')">
+				<div class="nav-id">Instance #37736250384</div>
+				<div class="nav-meta">10 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736255504')">
+				<div class="nav-id">Instance #37736255504</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736260624')">
+				<div class="nav-id">Instance #37736260624</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736265744')">
+				<div class="nav-id">Instance #37736265744</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736270864')">
+				<div class="nav-id">Instance #37736270864</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736275984')">
+				<div class="nav-id">Instance #37736275984</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736284176')">
+				<div class="nav-id">Instance #37736284176</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736289296')">
+				<div class="nav-id">Instance #37736289296</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736294416')">
+				<div class="nav-id">Instance #37736294416</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736299536')">
+				<div class="nav-id">Instance #37736299536</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736304656')">
+				<div class="nav-id">Instance #37736304656</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736309776')">
+				<div class="nav-id">Instance #37736309776</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736314896')">
+				<div class="nav-id">Instance #37736314896</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736320016')">
+				<div class="nav-id">Instance #37736320016</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736325136')">
+				<div class="nav-id">Instance #37736325136</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736330256')">
+				<div class="nav-id">Instance #37736330256</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736335376')">
+				<div class="nav-id">Instance #37736335376</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736340496')">
+				<div class="nav-id">Instance #37736340496</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736345616')">
+				<div class="nav-id">Instance #37736345616</div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736350736')">
+				<div class="nav-id">Instance #37736350736</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736355856')">
+				<div class="nav-id">Instance #37736355856</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736360976')">
+				<div class="nav-id">Instance #37736360976</div>
+				<div class="nav-meta">9 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736366096')">
+				<div class="nav-id">Instance #37736366096</div>
+				<div class="nav-meta">8 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736371216')">
+				<div class="nav-id">Instance #37736371216</div>
+				<div class="nav-meta">8 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736376336')">
+				<div class="nav-id">Instance #37736376336</div>
+				<div class="nav-meta">8 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736381456')">
+				<div class="nav-id">Instance #37736381456</div>
+				<div class="nav-meta">8 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736386576')">
+				<div class="nav-id">Instance #37736386576</div>
+				<div class="nav-meta">8 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736391696')">
+				<div class="nav-id">Instance #37736391696</div>
+				<div class="nav-meta">8 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736396816')">
+				<div class="nav-id">Instance #37736396816</div>
+				<div class="nav-meta">5 Steps | 1 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736401936')">
+				<div class="nav-id">Instance #37736401936</div>
+				<div class="nav-meta">5 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('37736407056')">
+				<div class="nav-id">Instance #37736407056</div>
+				<div class="nav-meta">5 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205152272')">
+				<div class="nav-id">Instance #48205152272 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">31 Steps | 6 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205157392')">
+				<div class="nav-id">Instance #48205157392 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">19 Steps | 6 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205162512')">
+				<div class="nav-id">Instance #48205162512 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">21 Steps | 6 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205167632')">
+				<div class="nav-id">Instance #48205167632 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">19 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205172752')">
+				<div class="nav-id">Instance #48205172752 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">16 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205177872')">
+				<div class="nav-id">Instance #48205177872 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">21 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205182992')">
+				<div class="nav-id">Instance #48205182992 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">21 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205188112')">
+				<div class="nav-id">Instance #48205188112 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205193232')">
+				<div class="nav-id">Instance #48205193232 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205198352')">
+				<div class="nav-id">Instance #48205198352 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205203472')">
+				<div class="nav-id">Instance #48205203472 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205208592')">
+				<div class="nav-id">Instance #48205208592 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205213712')">
+				<div class="nav-id">Instance #48205213712 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205218832')">
+				<div class="nav-id">Instance #48205218832 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205223952')">
+				<div class="nav-id">Instance #48205223952 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205229072')">
+				<div class="nav-id">Instance #48205229072 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205234192')">
+				<div class="nav-id">Instance #48205234192 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205239312')">
+				<div class="nav-id">Instance #48205239312 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205244432')">
+				<div class="nav-id">Instance #48205244432 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205249552')">
+				<div class="nav-id">Instance #48205249552 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205254672')">
+				<div class="nav-id">Instance #48205254672 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205259792')">
+				<div class="nav-id">Instance #48205259792 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205264912')">
+				<div class="nav-id">Instance #48205264912 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205270032')">
+				<div class="nav-id">Instance #48205270032 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205275152')">
+				<div class="nav-id">Instance #48205275152 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205283344')">
+				<div class="nav-id">Instance #48205283344 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205288464')">
+				<div class="nav-id">Instance #48205288464 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205293584')">
+				<div class="nav-id">Instance #48205293584 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205298704')">
+				<div class="nav-id">Instance #48205298704 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205303824')">
+				<div class="nav-id">Instance #48205303824 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205308944')">
+				<div class="nav-id">Instance #48205308944 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205314064')">
+				<div class="nav-id">Instance #48205314064 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205319184')">
+				<div class="nav-id">Instance #48205319184 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205324304')">
+				<div class="nav-id">Instance #48205324304 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205329424')">
+				<div class="nav-id">Instance #48205329424 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">17 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205334544')">
+				<div class="nav-id">Instance #48205334544 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205339664')">
+				<div class="nav-id">Instance #48205339664 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">15 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205344784')">
+				<div class="nav-id">Instance #48205344784 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205349904')">
+				<div class="nav-id">Instance #48205349904 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 5 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205355024')">
+				<div class="nav-id">Instance #48205355024</div>
+				<div class="nav-meta">10 Steps | 2 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205360144')">
+				<div class="nav-id">Instance #48205360144 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205365264')">
+				<div class="nav-id">Instance #48205365264 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">12 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205370384')">
+				<div class="nav-id">Instance #48205370384 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 4 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205375504')">
+				<div class="nav-id">Instance #48205375504 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205380624')">
+				<div class="nav-id">Instance #48205380624 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">13 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205385744')">
+				<div class="nav-id">Instance #48205385744 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">11 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205390864')">
+				<div class="nav-id">Instance #48205390864 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205395984')">
+				<div class="nav-id">Instance #48205395984 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205401104')">
+				<div class="nav-id">Instance #48205401104 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">10 Steps | 3 Threads</div>
+			</div><div class="nav-item" onclick="openCoro('48205406224')">
+				<div class="nav-id">Instance #48205406224 <span style='color:#f85149;font-weight:bold'>[CORRUPTED]</span></div>
+				<div class="nav-meta">9 Steps | 3 Threads</div>
+			</div></div>
+    </div>
+    <div id="viewport">
+        <div class="placeholder" id="init-msg"><h2>Select a Trace Instance</h2><p>Static topology reconstruction is ready.</p></div>
+        
+			<div id="coro-0" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #0</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>115</p></div>
+						<div class="info-card"><h4>Threads</h4><p>13</p></div>
+						<div class="info-card"><h4>Duration</h4><p>72057594037.93 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>0</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-0" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['0'] = {
+						data: [[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[0.000000, 0],[168788990.265000, 0],[168788992.473000, 1],[168788992.483000, 1],[168788992.487000, 1],[168788992.492000, 1],[168788992.492000, 1],[168788992.505000, 1],[168788992.508000, 0],[168788992.632000, 1],[168788992.636000, 0],[168788992.640000, 1],[168788992.649000, 1],[168788993.174000, 1],[168788993.176000, 1],[168788993.184000, 1],[168788993.311000, 1],[168788993.314000, 1],[168788993.325000, 1],[168788993.329000, 1],[168788993.341000, 0],[168788993.443000, 1],[168788993.619000, 1],[168788993.771000, 1],[168788993.775000, 0],[72057594037.927933, 0],[72057594037.927933, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:36390149136'},{xAxis:0.000000, yAxis:0, value:'TID:36389982224'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:36390108176'},{xAxis:0.000000, yAxis:0, value:'TID:36390064144'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:36390023184'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:0.000000, yAxis:0, value:'TID:72057594037927936'},{xAxis:0.000000, yAxis:0, value:'TID:0'},{xAxis:168788990.265000, yAxis:0, value:'TID:1238736'},{xAxis:168788992.473000, yAxis:1, value:'TID:1238733'},{xAxis:168788992.487000, yAxis:1, value:'TID:1238734'},{xAxis:168788992.492000, yAxis:1, value:'TID:1238733'},{xAxis:168788992.492000, yAxis:1, value:'TID:1238734'},{xAxis:168788993.174000, yAxis:1, value:'TID:1238735'},{xAxis:168788993.325000, yAxis:1, value:'TID:1238733'},{xAxis:168788993.443000, yAxis:1, value:'TID:1238734'},{xAxis:168788993.619000, yAxis:1, value:'TID:1238735'},{xAxis:72057594037.927933, yAxis:0, value:'TID:168788992528000'},{xAxis:72057594037.927933, yAxis:0, value:'TID:168788992688000'}]
+					};
+				</script>
+			</div>
+			<div id="coro-4342902816" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #4342902816</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>61</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>6366.00 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168782627172000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-4342902816" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['4342902816'] = {
+						data: [[0.000000, 0],[6361.625000, 1],[6361.669000, 1],[6361.694000, 0],[6362.313000, 1],[6362.562000, 1],[6362.576000, 0],[6362.793000, 1],[6362.834000, 1],[6362.858000, 0],[6363.022000, 1],[6363.048000, 1],[6363.059000, 0],[6363.205000, 1],[6364.789000, 1],[6364.853000, 1],[6364.875000, 1],[6364.885000, 1],[6364.896000, 1],[6364.909000, 1],[6364.918000, 1],[6364.976000, 1],[6364.988000, 1],[6364.995000, 1],[6365.001000, 1],[6365.008000, 1],[6365.020000, 1],[6365.027000, 1],[6365.036000, 1],[6365.047000, 1],[6365.055000, 1],[6365.063000, 1],[6365.074000, 1],[6365.081000, 1],[6365.089000, 1],[6365.102000, 1],[6365.108000, 0],[6365.790000, 1],[6365.832000, 1],[6365.845000, 1],[6365.853000, 1],[6365.859000, 1],[6365.868000, 1],[6365.874000, 1],[6365.879000, 1],[6365.888000, 1],[6365.894000, 1],[6365.899000, 1],[6365.908000, 1],[6365.914000, 1],[6365.920000, 1],[6365.925000, 1],[6365.933000, 1],[6365.938000, 1],[6365.961000, 1],[6365.969000, 1],[6365.974000, 1],[6365.980000, 1],[6365.988000, 1],[6365.993000, 1],[6365.998000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238733'},{xAxis:6361.625000, yAxis:1, value:'TID:1238734'},{xAxis:6362.793000, yAxis:1, value:'TID:1238733'},{xAxis:6363.022000, yAxis:1, value:'TID:1238736'},{xAxis:6363.205000, yAxis:1, value:'TID:1238735'}]
+					};
+				</script>
+			</div>
+			<div id="coro-4348653600" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #4348653600</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>41</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759344.71 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788988847000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-4348653600" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['4348653600'] = {
+						data: [[0.000000, 1],[4754550.364000, 0],[4759339.748000, 1],[4759339.802000, 1],[4759339.848000, 0],[4759340.303000, 1],[4759340.330000, 0],[4759340.490000, 1],[4759340.507000, 1],[4759340.517000, 0],[4759341.098000, 1],[4759341.137000, 1],[4759341.164000, 1],[4759341.184000, 1],[4759341.193000, 1],[4759341.204000, 0],[4759341.899000, 1],[4759342.539000, 1],[4759342.549000, 1],[4759342.556000, 1],[4759342.562000, 1],[4759342.571000, 1],[4759342.578000, 1],[4759342.583000, 1],[4759342.592000, 0],[4759343.522000, 1],[4759343.528000, 1],[4759343.533000, 1],[4759343.542000, 1],[4759343.547000, 1],[4759343.553000, 1],[4759343.561000, 1],[4759343.568000, 1],[4759344.644000, 1],[4759344.664000, 1],[4759344.674000, 1],[4759344.681000, 1],[4759344.687000, 1],[4759344.696000, 1],[4759344.702000, 1],[4759344.705000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238735'},{xAxis:4754550.364000, yAxis:0, value:'TID:1297297'},{xAxis:4759339.748000, yAxis:1, value:'TID:1297298'},{xAxis:4759340.490000, yAxis:1, value:'TID:1297300'},{xAxis:4759341.098000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.899000, yAxis:1, value:'TID:1297297'},{xAxis:4759343.522000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-4348660656" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #4348660656</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>5</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759339.78 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788988871000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-4348660656" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['4348660656'] = {
+						data: [[0.000000, 1],[0.021000, 1],[0.023000, 0],[0.179000, 1],[4759339.777000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238734'},{xAxis:0.179000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.777000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-4372787392" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #4372787392</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>50</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3710.12 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174553205681000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-4372787392" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['4372787392'] = {
+						data: [[0.000000, 0],[3706.904000, 1],[3706.977000, 1],[3707.031000, 0],[3707.545000, 1],[3707.572000, 1],[3707.577000, 0],[3707.667000, 1],[3707.687000, 1],[3707.702000, 1],[3707.758000, 1],[3707.767000, 1],[3707.777000, 1],[3707.784000, 1],[3707.788000, 0],[3708.372000, 1],[3708.379000, 1],[3708.384000, 1],[3708.391000, 1],[3708.399000, 1],[3708.406000, 1],[3708.414000, 1],[3708.420000, 0],[3709.858000, 1],[3709.863000, 1],[3709.869000, 1],[3709.879000, 1],[3709.885000, 1],[3709.890000, 1],[3709.932000, 1],[3709.939000, 1],[3709.946000, 1],[3709.958000, 1],[3709.964000, 1],[3709.972000, 1],[3709.977000, 1],[3709.982000, 1],[3709.989000, 1],[3709.994000, 1],[3709.999000, 1],[3710.035000, 1],[3710.048000, 1],[3710.053000, 1],[3710.062000, 1],[3710.091000, 1],[3710.097000, 1],[3710.101000, 1],[3710.109000, 1],[3710.113000, 1],[3710.117000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:3706.904000, yAxis:1, value:'TID:1307537'},{xAxis:3707.667000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-4372787792" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #4372787792</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>1</p></div>
+						<div class="info-card"><h4>Threads</h4><p>1</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.00 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556912660000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-4372787792" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['4372787792'] = {
+						data: [[0.000000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307538'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736153104" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736153104</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>14</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>5.42 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556912712000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736153104" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736153104'] = {
+						data: [[0.000000, 1],[0.034000, 1],[0.037000, 0],[0.145000, 1],[0.551000, 0],[2.904000, 1],[2.918000, 1],[2.932000, 1],[2.934000, 0],[3.768000, 1],[3.773000, 1],[3.780000, 1],[3.783000, 0],[5.416000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307538'},{xAxis:0.145000, yAxis:1, value:'TID:1307536'},{xAxis:0.551000, yAxis:0, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736158224" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736158224</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>1</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.86 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913266000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736158224" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736158224'] = {
+						data: [[0.000000, 0],[2.382000, 1],[2.385000, 1],[2.390000, 1],[2.391000, 0],[3.232000, 1],[3.236000, 1],[3.242000, 1],[3.245000, 0],[4.857000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736163344" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736163344</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.64 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913474000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736163344" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736163344'] = {
+						data: [[0.000000, 0],[2.185000, 1],[2.187000, 1],[2.191000, 1],[2.192000, 0],[3.040000, 1],[3.044000, 1],[3.049000, 1],[3.052000, 0],[4.643000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.185000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736168464" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736168464</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.63 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913477000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736168464" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736168464'] = {
+						data: [[0.000000, 0],[2.190000, 1],[2.193000, 1],[2.197000, 1],[2.198000, 0],[3.051000, 1],[3.056000, 1],[3.062000, 1],[3.065000, 0],[4.635000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.190000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736173584" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736173584</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.62 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913480000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736173584" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736173584'] = {
+						data: [[0.000000, 0],[2.196000, 1],[2.199000, 1],[2.203000, 1],[2.203000, 0],[3.065000, 1],[3.068000, 1],[3.074000, 1],[3.077000, 0],[4.624000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.196000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736178704" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736178704</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.60 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913483000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736178704" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736178704'] = {
+						data: [[0.000000, 0],[2.202000, 1],[2.204000, 1],[2.962000, 1],[2.973000, 1],[2.977000, 1],[2.989000, 1],[2.992000, 0],[4.597000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.202000, yAxis:1, value:'TID:1307537'},{xAxis:4.597000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736183824" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736183824</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>6</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.24 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913486000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736183824" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736183824'] = {
+						data: [[0.000000, 0],[2.266000, 1],[2.808000, 1],[2.820000, 1],[2.823000, 0],[4.244000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.266000, yAxis:1, value:'TID:1307538'},{xAxis:4.244000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736188944" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736188944</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>2</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>2.27 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913489000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736188944" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736188944'] = {
+						data: [[0.000000, 0],[2.267000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.267000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736194064" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736194064</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4.23 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556913492000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736194064" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736194064'] = {
+						data: [[0.000000, 0],[2.308000, 1],[2.312000, 1],[2.318000, 1],[2.319000, 0],[3.068000, 1],[3.071000, 1],[3.077000, 1],[3.080000, 0],[4.234000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:3.068000, yAxis:1, value:'TID:1307537'},{xAxis:4.234000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736199184" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736199184</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.62 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914105000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736199184" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736199184'] = {
+						data: [[0.000000, 0],[1.707000, 1],[1.710000, 1],[1.718000, 1],[1.719000, 0],[2.470000, 1],[2.474000, 1],[2.481000, 1],[2.483000, 0],[3.617000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.470000, yAxis:1, value:'TID:1307537'},{xAxis:3.617000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736204304" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736204304</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.61 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914108000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736204304" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736204304'] = {
+						data: [[0.000000, 0],[1.717000, 1],[1.721000, 1],[1.725000, 1],[1.726000, 0],[2.483000, 1],[2.487000, 1],[2.492000, 1],[2.494000, 0],[3.610000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.483000, yAxis:1, value:'TID:1307537'},{xAxis:3.610000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736209424" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736209424</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.60 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914114000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736209424" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736209424'] = {
+						data: [[0.000000, 0],[1.722000, 1],[1.726000, 1],[1.730000, 1],[1.731000, 0],[2.491000, 1],[2.495000, 1],[2.502000, 1],[2.505000, 0],[3.600000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.491000, yAxis:1, value:'TID:1307537'},{xAxis:3.600000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736214544" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736214544</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.59 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914117000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736214544" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736214544'] = {
+						data: [[0.000000, 0],[1.729000, 1],[1.733000, 1],[1.738000, 1],[1.739000, 0],[2.505000, 1],[2.509000, 1],[2.515000, 1],[2.518000, 0],[3.594000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.505000, yAxis:1, value:'TID:1307537'},{xAxis:3.594000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736219664" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736219664</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.59 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914120000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736219664" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736219664'] = {
+						data: [[0.000000, 0],[1.737000, 1],[1.741000, 1],[1.745000, 1],[1.746000, 0],[2.518000, 1],[2.521000, 1],[2.528000, 1],[2.530000, 0],[3.587000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.518000, yAxis:1, value:'TID:1307537'},{xAxis:3.587000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736224784" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736224784</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.58 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914122000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736224784" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736224784'] = {
+						data: [[0.000000, 0],[1.745000, 1],[1.749000, 1],[1.755000, 1],[1.757000, 0],[2.529000, 1],[2.532000, 1],[2.537000, 1],[2.538000, 0],[3.582000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.529000, yAxis:1, value:'TID:1307537'},{xAxis:3.582000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736229904" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736229904</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.57 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914125000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736229904" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736229904'] = {
+						data: [[0.000000, 0],[1.756000, 1],[1.758000, 1],[1.762000, 1],[1.763000, 0],[2.536000, 1],[2.539000, 1],[2.543000, 1],[2.544000, 0],[3.573000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.536000, yAxis:1, value:'TID:1307537'},{xAxis:3.573000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736235024" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736235024</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.57 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914128000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736235024" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736235024'] = {
+						data: [[0.000000, 0],[1.763000, 1],[1.765000, 1],[1.771000, 1],[1.772000, 0],[2.542000, 1],[2.545000, 1],[2.550000, 1],[2.551000, 0],[3.567000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.542000, yAxis:1, value:'TID:1307537'},{xAxis:3.567000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736240144" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736240144</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.56 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914131000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736240144" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736240144'] = {
+						data: [[0.000000, 0],[1.772000, 1],[1.775000, 1],[1.779000, 1],[1.781000, 0],[2.549000, 1],[2.552000, 1],[2.556000, 1],[2.557000, 0],[3.560000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.549000, yAxis:1, value:'TID:1307537'},{xAxis:3.560000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736245264" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736245264</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.55 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914133000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736245264" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736245264'] = {
+						data: [[0.000000, 0],[1.781000, 1],[1.783000, 1],[1.788000, 1],[1.789000, 0],[2.556000, 1],[2.559000, 1],[2.563000, 1],[2.564000, 0],[3.551000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.556000, yAxis:1, value:'TID:1307537'},{xAxis:3.551000, yAxis:1, value:'TID:1307538'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736250384" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736250384</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>3.54 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556914136000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736250384" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736250384'] = {
+						data: [[0.000000, 0],[1.788000, 1],[1.809000, 1],[1.816000, 1],[1.818000, 0],[2.562000, 1],[2.565000, 1],[2.569000, 1],[2.570000, 0],[3.535000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1307536'},{xAxis:2.562000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736255504" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736255504</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.71 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556915957000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736255504" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736255504'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.008000, 1],[0.009000, 0],[0.751000, 1],[0.753000, 1],[0.758000, 1],[0.759000, 0],[1.708000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.751000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736260624" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736260624</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.69 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556915969000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736260624" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736260624'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.007000, 1],[0.008000, 0],[0.749000, 1],[0.751000, 1],[0.756000, 1],[0.757000, 0],[1.692000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.749000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736265744" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736265744</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.67 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556915980000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736265744" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736265744'] = {
+						data: [[0.000000, 1],[0.005000, 1],[0.010000, 1],[0.011000, 0],[0.747000, 1],[0.749000, 1],[0.753000, 1],[0.754000, 0],[1.673000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.747000, yAxis:1, value:'TID:1307537'},{xAxis:1.673000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736270864" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736270864</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.65 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556915994000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736270864" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736270864'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.008000, 1],[0.009000, 0],[0.742000, 1],[0.744000, 1],[0.749000, 1],[0.750000, 0],[1.653000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.742000, yAxis:1, value:'TID:1307537'},{xAxis:1.653000, yAxis:1, value:'TID:1307538'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736275984" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736275984</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.63 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916006000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736275984" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736275984'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.007000, 1],[0.008000, 0],[0.740000, 1],[0.742000, 1],[0.746000, 1],[0.747000, 0],[1.630000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.740000, yAxis:1, value:'TID:1307537'},{xAxis:1.630000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736284176" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736284176</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.61 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916017000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736284176" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736284176'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.007000, 1],[0.008000, 0],[0.738000, 1],[0.740000, 1],[0.744000, 1],[0.745000, 0],[1.613000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.738000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736289296" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736289296</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.59 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916028000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736289296" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736289296'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.009000, 1],[0.010000, 0],[0.736000, 1],[0.738000, 1],[0.744000, 1],[0.745000, 0],[1.593000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.736000, yAxis:1, value:'TID:1307537'},{xAxis:1.593000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736294416" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736294416</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.57 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916041000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736294416" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736294416'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.008000, 1],[0.009000, 0],[0.733000, 1],[0.735000, 1],[0.739000, 1],[0.740000, 0],[1.573000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.733000, yAxis:1, value:'TID:1307537'},{xAxis:1.573000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736299536" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736299536</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.56 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916052000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736299536" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736299536'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.006000, 1],[0.007000, 0],[0.731000, 1],[0.733000, 1],[0.737000, 1],[0.738000, 0],[1.559000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.731000, yAxis:1, value:'TID:1307537'},{xAxis:1.559000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736304656" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736304656</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.54 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916062000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736304656" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736304656'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.006000, 1],[0.007000, 0],[0.730000, 1],[0.732000, 1],[0.739000, 1],[0.741000, 0],[1.538000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.730000, yAxis:1, value:'TID:1307537'},{xAxis:1.538000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736309776" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736309776</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.52 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916071000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736309776" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736309776'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.008000, 1],[0.009000, 0],[0.733000, 1],[0.736000, 1],[0.744000, 1],[0.746000, 0],[1.523000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.733000, yAxis:1, value:'TID:1307537'},{xAxis:1.523000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736314896" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736314896</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.50 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916083000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736314896" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736314896'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.005000, 1],[0.006000, 0],[0.735000, 1],[0.738000, 1],[0.746000, 1],[0.747000, 0],[1.504000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.735000, yAxis:1, value:'TID:1307537'},{xAxis:1.504000, yAxis:1, value:'TID:1307538'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736320016" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736320016</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.49 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916092000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736320016" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736320016'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.006000, 1],[0.007000, 0],[0.740000, 1],[0.742000, 1],[0.749000, 1],[0.751000, 0],[1.491000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.740000, yAxis:1, value:'TID:1307537'},{xAxis:1.491000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736325136" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736325136</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.48 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916101000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736325136" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736325136'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.005000, 1],[0.007000, 0],[0.743000, 1],[0.746000, 1],[0.754000, 1],[0.755000, 0],[1.477000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.743000, yAxis:1, value:'TID:1307537'},{xAxis:1.477000, yAxis:1, value:'TID:1307538'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736330256" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736330256</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.46 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916111000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736330256" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736330256'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.005000, 1],[0.007000, 0],[0.746000, 1],[0.749000, 1],[0.755000, 1],[0.756000, 0],[1.464000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.746000, yAxis:1, value:'TID:1307537'},{xAxis:1.464000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736335376" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736335376</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.45 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916121000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736335376" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736335376'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.008000, 1],[0.008000, 0],[0.748000, 1],[0.751000, 1],[0.758000, 1],[0.759000, 0],[1.446000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.748000, yAxis:1, value:'TID:1307537'},{xAxis:1.446000, yAxis:1, value:'TID:1307538'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736340496" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736340496</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.43 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916132000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736340496" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736340496'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.005000, 1],[0.006000, 0],[0.749000, 1],[0.752000, 1],[0.757000, 1],[0.758000, 0],[1.431000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.749000, yAxis:1, value:'TID:1307537'},{xAxis:1.431000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736345616" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736345616</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.42 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916140000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736345616" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736345616'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.005000, 1],[0.006000, 0],[0.751000, 1],[0.754000, 1],[0.763000, 1],[0.764000, 0],[1.419000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.751000, yAxis:1, value:'TID:1307537'},{xAxis:1.419000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736350736" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736350736</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.40 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916149000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736350736" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736350736'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.006000, 1],[0.007000, 0],[0.756000, 1],[0.759000, 1],[0.767000, 1],[0.768000, 0],[1.402000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.756000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736355856" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736355856</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.39 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916159000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736355856" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736355856'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.005000, 1],[0.006000, 0],[0.760000, 1],[0.763000, 1],[0.771000, 1],[0.772000, 0],[1.392000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.760000, yAxis:1, value:'TID:1307537'},{xAxis:1.392000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736360976" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736360976</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.37 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916168000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736360976" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736360976'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.004000, 1],[0.006000, 0],[0.765000, 1],[0.768000, 1],[0.774000, 1],[0.776000, 0],[1.367000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.765000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736366096" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736366096</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>8</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.78 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916177000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736366096" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736366096'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.005000, 1],[0.007000, 0],[0.768000, 1],[0.771000, 1],[0.778000, 1],[0.779000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.768000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736371216" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736371216</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>8</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.80 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916186000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736371216" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736371216'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.006000, 1],[0.007000, 0],[0.791000, 1],[0.794000, 1],[0.802000, 1],[0.803000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.791000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736376336" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736376336</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>8</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.81 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916198000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736376336" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736376336'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.004000, 1],[0.005000, 0],[0.803000, 1],[0.806000, 1],[0.814000, 1],[0.815000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.803000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736381456" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736381456</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>8</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.83 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916207000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736381456" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736381456'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.006000, 1],[0.007000, 0],[0.819000, 1],[0.822000, 1],[0.830000, 1],[0.831000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.819000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736386576" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736386576</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>8</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.85 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916218000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736386576" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736386576'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.006000, 1],[0.008000, 0],[0.834000, 1],[0.838000, 1],[0.844000, 1],[0.846000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.834000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736391696" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736391696</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>8</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>0.86 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916229000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736391696" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736391696'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.007000, 1],[0.009000, 0],[0.846000, 1],[0.849000, 1],[0.856000, 1],[0.858000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:0.846000, yAxis:1, value:'TID:1307537'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736396816" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736396816</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>5</p></div>
+						<div class="info-card"><h4>Threads</h4><p>1</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.29 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916240000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736396816" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736396816'] = {
+						data: [[0.000000, 1],[0.001000, 1],[0.005000, 1],[0.006000, 0],[1.286000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736401936" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736401936</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>5</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.27 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916249000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736401936" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736401936'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.007000, 1],[0.008000, 0],[1.268000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:1.268000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-37736407056" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #37736407056</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>5</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.20 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>174556916261000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-37736407056" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['37736407056'] = {
+						data: [[0.000000, 1],[0.000000, 1],[0.006000, 1],[0.007000, 0],[1.196000, 1]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1307536'},{xAxis:1.196000, yAxis:1, value:'TID:1307539'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205152272" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205152272</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>31</p></div>
+						<div class="info-card"><h4>Threads</h4><p>6</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759345.47 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788989758000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205152272" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205152272'] = {
+						data: [[0.000000, 0],[0.007000, 0],[2.659000, 1],[2.664000, 1],[2.672000, 1],[2.675000, 0],[2.676000, 1],[2.689000, 1],[2.705000, 1],[2.710000, 0],[3.812000, 1],[3.842000, 1],[4759338.938000, 1],[4759338.971000, 1],[4759338.974000, 0],[4759339.091000, 1],[4759339.424000, 0],[4759342.426000, 1],[4759342.438000, 1],[4759342.456000, 1],[4759342.459000, 0],[4759343.447000, 1],[4759343.451000, 1],[4759343.457000, 1],[4759343.459000, 0],[4759344.465000, 1],[4759344.468000, 1],[4759344.474000, 1],[4759344.475000, 0],[4759345.454000, 1],[4759345.466000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:2.659000, yAxis:1, value:'TID:1238735'},{xAxis:2.676000, yAxis:1, value:'TID:1238733'},{xAxis:4759338.938000, yAxis:1, value:'TID:1297299'},{xAxis:4759339.091000, yAxis:1, value:'TID:1297297'},{xAxis:4759339.424000, yAxis:0, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205157392" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205157392</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>19</p></div>
+						<div class="info-card"><h4>Threads</h4><p>6</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759344.84 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788990039000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205157392" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205157392'] = {
+						data: [[0.000000, 0],[0.199000, 1],[2.398000, 1],[2.405000, 1],[2.412000, 1],[2.416000, 0],[3.561000, 1],[4759339.330000, 1],[4759340.020000, 0],[4759342.182000, 1],[4759342.801000, 1],[4759342.834000, 1],[4759342.838000, 0],[4759343.960000, 1],[4759343.962000, 1],[4759343.966000, 1],[4759343.967000, 0],[4759344.834000, 1],[4759344.839000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238733'},{xAxis:0.199000, yAxis:1, value:'TID:1238736'},{xAxis:2.398000, yAxis:1, value:'TID:1238735'},{xAxis:4759339.330000, yAxis:1, value:'TID:1297300'},{xAxis:4759340.020000, yAxis:0, value:'TID:1297299'},{xAxis:4759342.182000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205162512" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205162512</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>21</p></div>
+						<div class="info-card"><h4>Threads</h4><p>6</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759344.95 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788990045000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205162512" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205162512'] = {
+						data: [[0.000000, 0],[2.414000, 1],[2.420000, 1],[2.428000, 1],[2.915000, 0],[3.571000, 1],[4759339.336000, 0],[4759342.161000, 1],[4759342.199000, 1],[4759342.210000, 1],[4759342.213000, 0],[4759343.174000, 1],[4759343.191000, 1],[4759343.197000, 1],[4759343.199000, 0],[4759344.189000, 1],[4759344.193000, 1],[4759344.197000, 1],[4759344.198000, 0],[4759344.938000, 1],[4759344.945000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238733'},{xAxis:2.414000, yAxis:1, value:'TID:1238735'},{xAxis:3.571000, yAxis:1, value:'TID:1238734'},{xAxis:4759339.336000, yAxis:0, value:'TID:1297300'},{xAxis:4759342.161000, yAxis:1, value:'TID:1297299'},{xAxis:4759343.174000, yAxis:1, value:'TID:1297298'},{xAxis:4759344.938000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205167632" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205167632</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>19</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.67 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992483000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205167632" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205167632'] = {
+						data: [[0.000000, 1],[0.009000, 1],[0.842000, 1],[0.846000, 1],[1.288000, 1],[1.292000, 0],[4759337.581000, 0],[4759339.945000, 1],[4759339.949000, 0],[4759340.811000, 1],[4759340.815000, 1],[4759340.820000, 1],[4759340.822000, 0],[4759341.802000, 1],[4759341.806000, 1],[4759341.811000, 1],[4759341.812000, 0],[4759342.664000, 1],[4759342.670000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238733'},{xAxis:1.288000, yAxis:1, value:'TID:1238735'},{xAxis:4759337.581000, yAxis:0, value:'TID:1297299'},{xAxis:4759339.945000, yAxis:1, value:'TID:1297300'},{xAxis:4759340.811000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.664000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205172752" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205172752</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>16</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759344.29 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788990712000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205172752" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205172752'] = {
+						data: [[0.000000, 1],[4759339.357000, 0],[4759341.549000, 1],[4759341.554000, 1],[4759341.559000, 1],[4759341.562000, 0],[4759342.535000, 1],[4759342.539000, 1],[4759342.548000, 1],[4759342.550000, 0],[4759343.534000, 1],[4759343.538000, 1],[4759343.545000, 1],[4759343.546000, 0],[4759344.288000, 1],[4759344.294000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238736'},{xAxis:4759339.357000, yAxis:0, value:'TID:1297299'},{xAxis:4759342.535000, yAxis:1, value:'TID:1297298'},{xAxis:4759344.288000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205177872" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205177872</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>21</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.72 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992291000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205177872" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205177872'] = {
+						data: [[0.000000, 1],[0.007000, 1],[0.023000, 1],[0.025000, 0],[1.237000, 1],[1.240000, 1],[4759337.787000, 0],[4759339.985000, 1],[4759339.990000, 1],[4759339.996000, 1],[4759339.998000, 0],[4759340.973000, 1],[4759340.978000, 1],[4759340.984000, 1],[4759340.986000, 0],[4759341.968000, 1],[4759341.971000, 1],[4759341.978000, 1],[4759341.979000, 0],[4759342.719000, 1],[4759342.722000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238735'},{xAxis:1.237000, yAxis:1, value:'TID:1238736'},{xAxis:4759337.787000, yAxis:0, value:'TID:1297299'},{xAxis:4759340.973000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.719000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205182992" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205182992</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>21</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.81 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992323000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205182992" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205182992'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.009000, 1],[0.011000, 0],[1.212000, 1],[1.217000, 1],[4759337.760000, 0],[4759339.969000, 1],[4759339.973000, 1],[4759339.979000, 1],[4759339.981000, 0],[4759340.956000, 1],[4759340.960000, 1],[4759340.967000, 1],[4759340.969000, 0],[4759341.948000, 1],[4759341.953000, 1],[4759341.960000, 1],[4759341.961000, 0],[4759342.693000, 1],[4759342.811000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238735'},{xAxis:1.212000, yAxis:1, value:'TID:1238733'},{xAxis:4759337.760000, yAxis:0, value:'TID:1297299'},{xAxis:4759340.956000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.693000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205188112" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205188112</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.53 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992351000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205188112" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205188112'] = {
+						data: [[0.000000, 0],[1.188000, 1],[1.191000, 1],[4759339.096000, 1],[4759339.104000, 1],[4759339.120000, 1],[4759339.123000, 0],[4759340.530000, 1],[4759340.559000, 1],[4759340.572000, 1],[4759340.575000, 0],[4759341.656000, 1],[4759341.659000, 1],[4759341.665000, 1],[4759341.665000, 0],[4759342.525000, 1],[4759342.529000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:1.188000, yAxis:1, value:'TID:1238736'},{xAxis:4759339.096000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.530000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.525000, yAxis:1, value:'TID:1297297'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205193232" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205193232</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.52 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992364000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205193232" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205193232'] = {
+						data: [[0.000000, 0],[1.192000, 1],[1.195000, 1],[4759339.113000, 1],[4759339.116000, 1],[4759339.121000, 1],[4759339.123000, 0],[4759340.565000, 1],[4759340.569000, 1],[4759340.575000, 1],[4759340.577000, 0],[4759341.654000, 1],[4759341.656000, 1],[4759341.662000, 1],[4759341.663000, 0],[4759342.512000, 1],[4759342.517000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:1.192000, yAxis:1, value:'TID:1238736'},{xAxis:4759339.113000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.565000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.512000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205198352" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205198352</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.50 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992391000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205198352" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205198352'] = {
+						data: [[0.000000, 0],[1.166000, 1],[1.169000, 1],[4759339.101000, 1],[4759339.103000, 1],[4759339.110000, 1],[4759339.112000, 0],[4759340.553000, 1],[4759340.557000, 1],[4759340.564000, 1],[4759340.566000, 0],[4759341.638000, 1],[4759341.641000, 1],[4759341.649000, 1],[4759341.650000, 0],[4759342.496000, 1],[4759342.504000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:1.166000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.101000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.553000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205203472" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205203472</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.49 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992413000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205203472" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205203472'] = {
+						data: [[0.000000, 0],[1.155000, 1],[1.159000, 1],[4759339.094000, 1],[4759339.096000, 1],[4759339.103000, 1],[4759339.105000, 0],[4759340.547000, 1],[4759340.551000, 1],[4759340.558000, 1],[4759340.560000, 0],[4759341.629000, 1],[4759341.631000, 1],[4759341.638000, 1],[4759341.639000, 0],[4759342.481000, 1],[4759342.487000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:1.155000, yAxis:1, value:'TID:1238736'},{xAxis:4759339.094000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.547000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.481000, yAxis:1, value:'TID:1297297'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205208592" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205208592</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.39 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992508000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205208592" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205208592'] = {
+						data: [[0.000000, 0],[1.111000, 1],[1.117000, 0],[4759339.014000, 1],[4759339.016000, 1],[4759339.022000, 1],[4759339.024000, 0],[4759340.468000, 1],[4759340.471000, 1],[4759340.479000, 1],[4759340.481000, 0],[4759341.545000, 1],[4759341.547000, 1],[4759341.552000, 1],[4759341.553000, 0],[4759342.387000, 1],[4759342.392000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:1.111000, yAxis:1, value:'TID:1238735'},{xAxis:4759339.014000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.468000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.387000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205213712" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205213712</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.38 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992528000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205213712" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205213712'] = {
+						data: [[0.000000, 0],[1.104000, 1],[1.110000, 0],[4759339.007000, 1],[4759339.009000, 1],[4759339.014000, 1],[4759339.016000, 0],[4759340.463000, 1],[4759340.467000, 1],[4759340.472000, 1],[4759340.474000, 0],[4759341.534000, 1],[4759341.537000, 1],[4759341.541000, 1],[4759341.542000, 0],[4759342.371000, 1],[4759342.375000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:1.104000, yAxis:1, value:'TID:1238735'},{xAxis:4759339.007000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.463000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.371000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205218832" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205218832</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.36 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992547000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205218832" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205218832'] = {
+						data: [[0.000000, 0],[1.088000, 1],[1.094000, 0],[4759339.001000, 1],[4759339.003000, 1],[4759339.011000, 1],[4759339.012000, 0],[4759340.458000, 1],[4759340.462000, 1],[4759340.467000, 1],[4759340.468000, 0],[4759341.524000, 1],[4759341.528000, 1],[4759341.533000, 1],[4759341.536000, 0],[4759342.355000, 1],[4759342.360000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:1.088000, yAxis:1, value:'TID:1238736'},{xAxis:4759339.001000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.458000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205223952" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205223952</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.36 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992566000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205223952" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205223952'] = {
+						data: [[0.000000, 0],[1.074000, 1],[1.080000, 0],[4759338.997000, 1],[4759338.999000, 1],[4759339.004000, 1],[4759339.006000, 0],[4759340.452000, 1],[4759340.456000, 1],[4759340.461000, 1],[4759340.463000, 0],[4759341.520000, 1],[4759341.524000, 1],[4759341.528000, 1],[4759341.529000, 0],[4759342.349000, 1],[4759342.355000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759338.997000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.452000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.349000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205229072" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205229072</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.34 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992585000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205229072" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205229072'] = {
+						data: [[0.000000, 0],[1.064000, 1],[1.070000, 0],[4759338.991000, 1],[4759338.993000, 1],[4759338.998000, 1],[4759339.000000, 0],[4759340.446000, 1],[4759340.450000, 1],[4759340.458000, 1],[4759340.465000, 0],[4759341.512000, 1],[4759341.515000, 1],[4759341.521000, 1],[4759341.522000, 0],[4759342.333000, 1],[4759342.337000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:1.064000, yAxis:1, value:'TID:1238735'},{xAxis:4759338.991000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.446000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.333000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205234192" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205234192</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.32 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992604000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205234192" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205234192'] = {
+						data: [[0.000000, 0],[1.047000, 1],[1.053000, 0],[4759338.985000, 1],[4759338.986000, 1],[4759338.991000, 1],[4759338.993000, 0],[4759340.449000, 1],[4759340.454000, 1],[4759340.462000, 1],[4759340.465000, 0],[4759341.504000, 1],[4759341.507000, 1],[4759341.514000, 1],[4759341.515000, 0],[4759342.314000, 1],[4759342.321000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:1.047000, yAxis:1, value:'TID:1238736'},{xAxis:4759338.985000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.449000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205239312" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205239312</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.31 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992623000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205239312" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205239312'] = {
+						data: [[0.000000, 0],[1.031000, 1],[1.036000, 0],[4759338.977000, 1],[4759338.979000, 1],[4759338.984000, 1],[4759338.986000, 0],[4759340.448000, 1],[4759340.453000, 1],[4759340.458000, 1],[4759340.460000, 0],[4759341.498000, 1],[4759341.501000, 1],[4759341.507000, 1],[4759341.507000, 0],[4759342.308000, 1],[4759342.312000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759338.977000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.448000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.308000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205244432" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205244432</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.28 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992656000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205244432" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205244432'] = {
+						data: [[0.000000, 0],[1.010000, 1],[1.172000, 0],[4759338.956000, 1],[4759338.958000, 1],[4759338.963000, 1],[4759338.965000, 0],[4759340.429000, 1],[4759340.434000, 1],[4759340.440000, 1],[4759340.442000, 0],[4759341.476000, 1],[4759341.479000, 1],[4759341.487000, 1],[4759341.488000, 0],[4759342.277000, 1],[4759342.281000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:4759338.956000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.429000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205249552" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205249552</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.30 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992649000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205249552" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205249552'] = {
+						data: [[0.000000, 1],[0.004000, 0],[1.017000, 1],[4759338.976000, 1],[4759338.978000, 1],[4759338.982000, 1],[4759338.984000, 0],[4759340.452000, 1],[4759340.456000, 1],[4759340.461000, 1],[4759340.463000, 0],[4759341.496000, 1],[4759341.500000, 1],[4759341.505000, 1],[4759341.505000, 0],[4759342.292000, 1],[4759342.296000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238734'},{xAxis:1.017000, yAxis:1, value:'TID:1238735'},{xAxis:4759338.976000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.452000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.292000, yAxis:1, value:'TID:1297297'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205254672" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205254672</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.26 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992688000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205254672" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205254672'] = {
+						data: [[0.000000, 0],[0.979000, 1],[0.987000, 0],[4759338.949000, 1],[4759338.951000, 1],[4759338.955000, 1],[4759338.957000, 0],[4759340.426000, 1],[4759340.430000, 1],[4759340.437000, 1],[4759340.439000, 0],[4759341.468000, 1],[4759341.471000, 1],[4759341.477000, 1],[4759341.478000, 0],[4759342.256000, 1],[4759342.261000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759338.949000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.426000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205259792" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205259792</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.26 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992692000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205259792" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205259792'] = {
+						data: [[0.000000, 0],[0.990000, 1],[0.993000, 0],[4759338.957000, 1],[4759338.959000, 1],[4759338.964000, 1],[4759338.966000, 0],[4759340.437000, 1],[4759340.441000, 1],[4759340.446000, 1],[4759340.448000, 0],[4759341.475000, 1],[4759341.479000, 1],[4759341.485000, 1],[4759341.485000, 0],[4759342.257000, 1],[4759342.262000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.990000, yAxis:1, value:'TID:1238735'},{xAxis:4759338.957000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.437000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.257000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205264912" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205264912</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.24 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992714000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205264912" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205264912'] = {
+						data: [[0.000000, 0],[0.969000, 1],[0.973000, 0],[4759338.947000, 1],[4759338.949000, 1],[4759338.954000, 1],[4759338.956000, 0],[4759340.429000, 1],[4759340.433000, 1],[4759340.440000, 1],[4759340.442000, 0],[4759341.465000, 1],[4759341.469000, 1],[4759341.473000, 1],[4759341.475000, 0],[4759342.238000, 1],[4759342.241000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759338.947000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.429000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.238000, yAxis:1, value:'TID:1297297'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205270032" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205270032</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.51 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992718000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205270032" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205270032'] = {
+						data: [[0.000000, 0],[0.974000, 1],[0.978000, 0],[4759338.955000, 1],[4759338.957000, 1],[4759338.962000, 1],[4759338.964000, 0],[4759340.440000, 1],[4759340.444000, 1],[4759340.451000, 1],[4759340.453000, 0],[4759341.473000, 1],[4759341.476000, 1],[4759341.480000, 1],[4759341.482000, 0],[4759342.238000, 1],[4759342.511000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.974000, yAxis:1, value:'TID:1238735'},{xAxis:4759338.955000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.440000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.238000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205275152" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205275152</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.22 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992742000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205275152" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205275152'] = {
+						data: [[0.000000, 0],[0.951000, 1],[0.955000, 0],[4759338.944000, 1],[4759338.946000, 1],[4759338.950000, 1],[4759338.952000, 0],[4759340.432000, 1],[4759340.436000, 1],[4759340.441000, 1],[4759340.443000, 0],[4759341.460000, 1],[4759341.463000, 1],[4759341.467000, 1],[4759341.470000, 0],[4759342.216000, 1],[4759342.220000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759338.944000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.432000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205283344" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205283344</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.22 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992748000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205283344" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205283344'] = {
+						data: [[0.000000, 0],[0.956000, 1],[0.964000, 0],[4759338.951000, 1],[4759338.973000, 1],[4759338.980000, 1],[4759338.982000, 0],[4759340.440000, 1],[4759340.444000, 1],[4759340.452000, 1],[4759340.455000, 0],[4759341.465000, 1],[4759341.468000, 1],[4759341.473000, 1],[4759341.474000, 0],[4759342.216000, 1],[4759342.223000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.956000, yAxis:1, value:'TID:1238735'},{xAxis:4759338.951000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.440000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.216000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205288464" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205288464</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.39 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788992765000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205288464" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205288464'] = {
+						data: [[0.000000, 0],[0.939000, 1],[1.061000, 0],[4759339.660000, 1],[4759339.663000, 1],[4759339.670000, 1],[4759339.672000, 0],[4759340.542000, 1],[4759340.546000, 1],[4759340.554000, 1],[4759340.556000, 0],[4759341.532000, 1],[4759341.535000, 1],[4759341.540000, 1],[4759341.542000, 0],[4759342.393000, 1],[4759342.395000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759339.660000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.542000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.393000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205293584" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205293584</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759342.12 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993185000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205293584" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205293584'] = {
+						data: [[0.000000, 0],[0.537000, 1],[0.543000, 0],[4759339.253000, 1],[4759339.256000, 1],[4759339.263000, 1],[4759339.266000, 0],[4759341.312000, 1],[4759341.315000, 1],[4759341.320000, 1],[4759341.322000, 0],[4759342.118000, 1],[4759342.122000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:4759339.253000, yAxis:1, value:'TID:1297300'},{xAxis:4759341.312000, yAxis:1, value:'TID:1297298'},{xAxis:4759342.118000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205298704" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205298704</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.98 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993198000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205298704" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205298704'] = {
+						data: [[0.000000, 0],[0.529000, 1],[0.535000, 0],[4759339.244000, 1],[4759339.247000, 1],[4759339.253000, 1],[4759339.257000, 0],[4759340.125000, 1],[4759340.129000, 1],[4759340.136000, 1],[4759340.138000, 0],[4759341.110000, 1],[4759341.117000, 1],[4759341.124000, 1],[4759341.125000, 0],[4759341.970000, 1],[4759341.976000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:0.529000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.244000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.125000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.970000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205303824" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205303824</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.97 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993211000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205303824" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205303824'] = {
+						data: [[0.000000, 0],[0.526000, 1],[0.528000, 0],[4759339.249000, 1],[4759339.251000, 1],[4759339.257000, 1],[4759339.259000, 0],[4759340.127000, 1],[4759340.131000, 1],[4759340.137000, 1],[4759340.140000, 0],[4759341.115000, 1],[4759341.118000, 1],[4759341.124000, 1],[4759341.125000, 0],[4759341.967000, 1],[4759341.969000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:4759339.249000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.127000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.967000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205308944" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205308944</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.96 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993224000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205308944" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205308944'] = {
+						data: [[0.000000, 0],[0.515000, 1],[0.518000, 0],[4759339.251000, 1],[4759339.253000, 1],[4759339.261000, 1],[4759339.263000, 0],[4759340.129000, 1],[4759340.133000, 1],[4759340.139000, 1],[4759340.142000, 0],[4759341.113000, 1],[4759341.115000, 1],[4759341.122000, 1],[4759341.124000, 0],[4759341.960000, 1],[4759341.962000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:0.515000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.251000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.129000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.960000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205314064" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205314064</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.97 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993235000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205314064" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205314064'] = {
+						data: [[0.000000, 0],[0.509000, 1],[0.512000, 0],[4759339.256000, 1],[4759339.257000, 1],[4759339.265000, 1],[4759339.267000, 0],[4759340.133000, 1],[4759340.137000, 1],[4759340.145000, 1],[4759340.147000, 0],[4759341.114000, 1],[4759341.117000, 1],[4759341.123000, 1],[4759341.125000, 0],[4759341.957000, 1],[4759341.974000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:4759339.256000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.133000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.957000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205319184" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205319184</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.97 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993265000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205319184" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205319184'] = {
+						data: [[0.000000, 0],[0.482000, 1],[0.485000, 0],[4759339.241000, 1],[4759339.243000, 1],[4759339.251000, 1],[4759339.253000, 0],[4759340.119000, 1],[4759340.123000, 1],[4759340.130000, 1],[4759340.132000, 0],[4759341.096000, 1],[4759341.099000, 1],[4759341.103000, 1],[4759341.104000, 0],[4759341.964000, 1],[4759341.970000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:0.482000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.241000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.119000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.964000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205324304" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205324304</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.95 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993289000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205324304" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205324304'] = {
+						data: [[0.000000, 0],[0.463000, 1],[0.467000, 0],[4759339.233000, 1],[4759339.235000, 1],[4759339.240000, 1],[4759339.242000, 0],[4759340.111000, 1],[4759340.114000, 1],[4759340.119000, 1],[4759340.121000, 0],[4759341.083000, 1],[4759341.085000, 1],[4759341.092000, 1],[4759341.094000, 0],[4759341.945000, 1],[4759341.953000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:4759339.233000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.111000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205329424" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205329424</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>17</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.94 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993306000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205329424" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205329424'] = {
+						data: [[0.000000, 0],[0.449000, 1],[0.454000, 0],[4759339.230000, 1],[4759339.231000, 1],[4759339.237000, 1],[4759339.239000, 0],[4759340.106000, 1],[4759340.110000, 1],[4759340.116000, 1],[4759340.119000, 0],[4759341.079000, 1],[4759341.083000, 1],[4759341.103000, 1],[4759341.107000, 0],[4759341.929000, 1],[4759341.944000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:0.449000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.230000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.106000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.929000, yAxis:1, value:'TID:1297297'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205334544" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205334544</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.53 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993323000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205334544" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205334544'] = {
+						data: [[0.000000, 0],[0.438000, 1],[0.441000, 0],[4759339.226000, 1],[4759339.228000, 1],[4759339.235000, 1],[4759339.237000, 0],[4759340.635000, 1],[4759340.639000, 1],[4759340.648000, 1],[4759340.649000, 0],[4759341.482000, 1],[4759341.533000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:4759339.226000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.635000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.482000, yAxis:1, value:'TID:1297297'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205339664" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205339664</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>15</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.53 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993356000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205339664" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205339664'] = {
+						data: [[0.000000, 0],[0.411000, 1],[0.416000, 0],[4759339.208000, 1],[4759339.210000, 1],[4759339.218000, 1],[4759339.220000, 0],[4759340.617000, 1],[4759340.620000, 1],[4759340.624000, 1],[4759340.625000, 0],[4759341.449000, 1],[4759341.481000, 1],[4759341.529000, 1],[4759341.531000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:0.411000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.208000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.617000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.449000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205344784" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205344784</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.47 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993375000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205344784" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205344784'] = {
+						data: [[0.000000, 0],[0.404000, 1],[0.408000, 0],[4759339.205000, 1],[4759339.207000, 1],[4759339.213000, 1],[4759339.215000, 0],[4759340.607000, 1],[4759340.609000, 1],[4759340.613000, 1],[4759340.614000, 0],[4759341.431000, 1],[4759341.475000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238735'},{xAxis:0.404000, yAxis:1, value:'TID:1238733'},{xAxis:4759339.205000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.607000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205349904" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205349904</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>5</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.48 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993381000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205349904" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205349904'] = {
+						data: [[0.000000, 0],[0.399000, 1],[0.402000, 0],[4759339.213000, 1],[4759339.215000, 1],[4759339.223000, 1],[4759339.225000, 0],[4759340.609000, 1],[4759340.611000, 1],[4759340.616000, 1],[4759340.617000, 0],[4759341.427000, 1],[4759341.482000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.399000, yAxis:1, value:'TID:1238735'},{xAxis:4759339.213000, yAxis:1, value:'TID:1297297'},{xAxis:4759340.609000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.427000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205355024" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205355024</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>2</p></div>
+						<div class="info-card"><h4>Duration</h4><p>1.83 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>173548333429000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205355024" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205355024'] = {
+						data: [[0.000000, 1],[0.002000, 1],[0.008000, 1],[0.010000, 0],[0.986000, 1],[0.990000, 1],[0.998000, 1],[0.999000, 0],[1.820000, 1],[1.828000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1297298'},{xAxis:1.820000, yAxis:1, value:'TID:1297300'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205360144" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205360144</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.86 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993406000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205360144" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205360144'] = {
+						data: [[0.000000, 0],[0.383000, 1],[0.388000, 0],[4759340.151000, 1],[4759340.153000, 1],[4759340.161000, 1],[4759340.163000, 0],[4759341.024000, 1],[4759341.027000, 1],[4759341.035000, 0],[4759341.035000, 1],[4759341.846000, 1],[4759341.860000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.383000, yAxis:1, value:'TID:1238735'},{xAxis:4759340.151000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.024000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.846000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205365264" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205365264</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>12</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.83 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993423000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205365264" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205365264'] = {
+						data: [[0.000000, 0],[0.378000, 1],[0.382000, 0],[4759340.149000, 1],[4759340.151000, 1],[4759340.156000, 1],[4759340.158000, 0],[4759341.021000, 1],[4759341.024000, 1],[4759341.029000, 1],[4759341.034000, 0],[4759341.830000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.378000, yAxis:1, value:'TID:1238735'},{xAxis:4759340.149000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.021000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205370384" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205370384</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>4</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.84 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993444000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205370384" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205370384'] = {
+						data: [[0.000000, 0],[0.366000, 1],[0.372000, 0],[4759340.141000, 1],[4759340.143000, 1],[4759340.148000, 1],[4759340.150000, 0],[4759341.015000, 1],[4759341.019000, 1],[4759341.025000, 1],[4759341.027000, 0],[4759341.835000, 1],[4759341.838000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:0.366000, yAxis:1, value:'TID:1238735'},{xAxis:4759340.141000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.015000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.835000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205375504" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205375504</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.83 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993462000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205375504" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205375504'] = {
+						data: [[0.000000, 0],[0.373000, 1],[0.378000, 0],[4759340.137000, 1],[4759340.139000, 1],[4759340.145000, 1],[4759340.148000, 0],[4759341.012000, 1],[4759341.015000, 1],[4759341.021000, 1],[4759341.023000, 0],[4759341.824000, 1],[4759341.826000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759340.137000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.012000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.824000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205380624" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205380624</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>13</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.83 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993464000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205380624" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205380624'] = {
+						data: [[0.000000, 0],[0.372000, 1],[0.377000, 0],[4759340.150000, 1],[4759340.152000, 1],[4759340.161000, 1],[4759340.163000, 0],[4759341.022000, 1],[4759341.025000, 1],[4759341.029000, 1],[4759341.031000, 0],[4759341.832000, 1],[4759341.834000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:4759340.150000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.022000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.832000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205385744" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205385744</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>11</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.83 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993484000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205385744" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205385744'] = {
+						data: [[0.000000, 0],[4759340.147000, 1],[4759340.149000, 1],[4759340.154000, 1],[4759340.156000, 0],[4759341.024000, 1],[4759341.027000, 1],[4759341.035000, 1],[4759341.036000, 0],[4759341.828000, 1],[4759341.830000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759340.147000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.024000, yAxis:1, value:'TID:1297298'},{xAxis:4759341.828000, yAxis:1, value:'TID:1297299'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205390864" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205390864</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.05 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993481000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205390864" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205390864'] = {
+						data: [[0.000000, 1],[0.004000, 0],[4759340.163000, 1],[4759340.165000, 1],[4759340.171000, 1],[4759340.173000, 0],[4759341.041000, 1],[4759341.043000, 1],[4759341.051000, 1],[4759341.052000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238736'},{xAxis:4759340.163000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.041000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205395984" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205395984</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.04 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993504000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205395984" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205395984'] = {
+						data: [[0.000000, 0],[4759340.154000, 1],[4759340.155000, 1],[4759340.162000, 1],[4759340.164000, 0],[4759341.031000, 1],[4759341.033000, 1],[4759341.041000, 1],[4759341.042000, 0]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238734'},{xAxis:4759340.154000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.031000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205401104" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205401104</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>10</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.06 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993504000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205401104" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205401104'] = {
+						data: [[0.000000, 1],[0.005000, 0],[4759340.168000, 1],[4759340.170000, 1],[4759340.177000, 1],[4759340.179000, 0],[4759341.044000, 1],[4759341.046000, 1],[4759341.055000, 1],[4759341.056000, 0]],
+						marks: [{xAxis:0.000000, yAxis:1, value:'TID:1238736'},{xAxis:4759340.168000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.044000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+			<div id="coro-48205406224" class="tab-pane">
+				<div class="panel-header">
+					<h1>Coroutine Journal: #48205406224</h1>
+					<div class="info-bar">
+						<div class="info-card"><h4>Events</h4><p>9</p></div>
+						<div class="info-card"><h4>Threads</h4><p>3</p></div>
+						<div class="info-card"><h4>Duration</h4><p>4759341.04 ms</p></div>
+						<div class="info-card"><h4>Start TS</h4><p>168788993527000</p></div>
+					</div>
+				</div>
+				<div class="chart-area" id="dom-48205406224" style="width:100%; min-height: 500px;"></div>
+				<script>
+					if (!window.chartConfigs) window.chartConfigs = {};
+					window.chartConfigs['48205406224'] = {
+						data: [[0.000000, 0],[4759340.160000, 1],[4759340.162000, 1],[4759340.170000, 1],[4759340.172000, 0],[4759341.034000, 1],[4759341.036000, 1],[4759341.041000, 0],[4759341.041000, 1]],
+						marks: [{xAxis:0.000000, yAxis:0, value:'TID:1238736'},{xAxis:4759340.160000, yAxis:1, value:'TID:1297299'},{xAxis:4759341.034000, yAxis:1, value:'TID:1297298'}]
+					};
+				</script>
+			</div>
+    </div>
+    <script>
+        var activeCharts = {};
+
+        function openCoro(id) {
+            document.getElementById('init-msg').style.display = 'none';
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            
+            event.currentTarget.classList.add('active');
+            var pane = document.getElementById('coro-' + id);
+            pane.classList.add('active');
+
+            // 核心修复：只有在容器 display: flex 可见之后，才初始化图表！
+            if (!activeCharts[id] && window.chartConfigs && window.chartConfigs[id]) {
+                var dom = document.getElementById('dom-' + id);
+                var chart = echarts.init(dom, 'dark');
+                var cfg = window.chartConfigs[id];
+                
+                chart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    dataZoom: [{type:'inside'}, {type:'slider', bottom: 10}],
+                    xAxis: { type: 'value', name: 'Offset (ms)', scale: true, splitLine: {lineStyle: {color: '#30363d'}} },
+                    yAxis: { type: 'category', data: ['Suspend', 'Active'], splitLine: {show: true} },
+                    series: [{
+                        type: 'line', step: 'end', data: cfg.data,
+                        lineStyle: { width: 3, color: '#58a6ff' },
+                        itemStyle: { color: '#58a6ff' },
+                        markPoint: { data: cfg.marks, symbolSize: 40 }
+                    }]
+                });
+                activeCharts[id] = chart;
+            } else if (activeCharts[id]) {
+                activeCharts[id].resize();
+            }
+        }
+        
+        window.addEventListener('resize', function() {
+            Object.values(activeCharts).forEach(chart => chart.resize());
+        });
+    </script>
+</body>
+</html>
