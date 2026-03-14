@@ -39,22 +39,49 @@ type StationData struct {
 	Flexible [448]byte
 }
 
-// Harvest performs a lock-free scan once and returns the number of data entries collected in this scan
+// Harvest implements strict SeqLock for tear-free lock-free scanning
 func (s *StationData) Harvest(lastSeenSeqs *[8]uint64, sw *StationWriter) int {
 	harvestedCount := 0
 	for i := 0; i < 8; i++ {
 		slot := &s.Slots[i]
 
-		// 1. Atomically read the Seq snapshot
-		currentSeq := atomic.LoadUint64(&slot.Seq)
+		// 🔵 Lean: go_scan (Step 1: Read pre-snapshot)
+		// Use LoadUint64 to guarantee memory barrier semantics
+		seq1 := atomic.LoadUint64(&slot.Seq)
 
-		if currentSeq > lastSeenSeqs[i] {
-			// 2. Pass the snapshot to the write function
-			sw.WriteSlot(s, i, currentSeq)
-
-			lastSeenSeqs[i] = currentSeq
-			harvestedCount++
+		// Condition 1: Skip if no new data
+		if seq1 <= lastSeenSeqs[i] {
+			continue
 		}
+		// Condition 2: Skip if Seq is odd (C++ is writing, data unstable)
+		if seq1%2 != 0 {
+			continue
+		}
+
+		// 🔵 Lean: go_read (Step 2: Copy Payload quickly to local/registers)
+		//Warning: C++ may wrap around and overwrite the slot memory at any time!
+		//Here we simply copy field by field; reading garbled data is allowed because the next step provides a safety net.
+		localTID := slot.TID
+		localAddr := slot.Addr
+		localIsActive := slot.IsActive
+		localTS := slot.Timestamp
+
+		// 🔵 Lean: go_validate (Step 3: Backstab Validation)
+		// Use the memory barrier of LoadUint64 again to verify if C++ touched this slot during the copy operation.
+		seq2 := atomic.LoadUint64(&slot.Seq)
+
+		// Core defense: If Seq has changed, it means wrap-around or tearing occurred!
+		// Corresponding to go_validate_fail in Lean, directly discard the dirty data just copied
+		if seq1 != seq2 {
+			continue
+		}
+
+		// 🟢 Validation passed! Corresponding to go_validate_pass in Lean
+		// At this point, variables such as localTID are 100% from a complete, clean C++ write
+		sw.WriteSafeSlot(s, seq1, localTID, localAddr, localIsActive, localTS)
+
+		lastSeenSeqs[i] = seq1
+		harvestedCount++
 	}
 	return harvestedCount
 }

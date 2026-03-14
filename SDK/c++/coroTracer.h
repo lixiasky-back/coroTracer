@@ -149,16 +149,29 @@ public:
     inline void write_trace(uint64_t addr, bool is_active) {
         if (!my_station) return;
 
-        current_seq++;
-        auto& slot = my_station->slots[current_seq % 8];
+        // 1. Locate the current ring buffer slot to write to
+        auto& slot = my_station->slots[event_count % 8];
+
+        // 🔴 Step A (Lean 4 Contract): Lock before writing (Odd Seq)
+        // Retrieve the Seq number from the previous round of this slot (must be even)
+        uint64_t old_seq = slot.seq.load(std::memory_order_relaxed);
+        // Increment by 1 to get an odd number. With release barrier, signal to Go immediately: "Writing in progress, do not read!"
+        slot.seq.store(old_seq + 1, std::memory_order_release);
+
+        // 🔴 Step B: Write Payload
+        // At this point, since Seq is odd, the Go side will skip immediately with continue if it scans here
 
         slot.addr = addr;
         slot.tid = get_tid();
         slot.timestamp = get_ns();
         slot.is_active = is_active;
 
-        slot.seq.store(current_seq, std::memory_order_release);
+        // 🔴 Step C (Lean 4 Contract): Unlock after writing (Even Seq)
+        // Increment by 1 again to make it even.
+        // The release barrier is critical: it ensures the CPU will NEVER reorder the above Payload write operations to after this line!
+        slot.seq.store(old_seq + 2, std::memory_order_release);
 
+        event_count++; // Advance the cursor for the next event
         // Fix potential lost wake-up
         std::atomic_thread_fence(std::memory_order_seq_cst);
         if (g_header->tracer_sleeping.load(std::memory_order_acquire) == 1) {

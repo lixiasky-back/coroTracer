@@ -19,32 +19,28 @@ func appendHex(dst []byte, v uint64) []byte {
 // MarshalSlotJSONL
 // Change 1: Modify the receiver to StationData
 // Change 2: Force pass observedSeq to completely eliminate dirty reads caused by secondary reads
-func (s *StationData) MarshalSlotJSONL(buf []byte, i int, observedSeq uint64) []byte {
-	// Note: The memory of s.Slots[i] here is being modified lock-free and concurrently by the C++ probe at all times!
-	slot := &s.Slots[i]
-
+func (s *StationData) marshalSafeSlotJSONL(buf []byte, safeSeq, tid, addr uint64, isActive bool, ts uint64) []byte {
 	buf = append(buf, `{"probe_id":`...)
 	buf = strconv.AppendUint(buf, s.Header.ProbeID, 10)
 
 	buf = append(buf, `,"tid":`...)
-	buf = strconv.AppendUint(buf, slot.TID, 10)
+	buf = strconv.AppendUint(buf, tid, 10)
 
 	buf = append(buf, `,"addr":"`...)
-	buf = appendHex(buf, slot.Addr)
+	buf = appendHex(buf, addr)
 
 	buf = append(buf, `","seq":`...)
-	// 🔴 Critical security fix: Must NEVER read slot.Seq; the externally passed snapshot MUST be used instead
-	buf = strconv.AppendUint(buf, observedSeq, 10)
+	buf = strconv.AppendUint(buf, safeSeq, 10)
 
 	buf = append(buf, `,"is_active":`...)
-	if slot.IsActive {
+	if isActive {
 		buf = append(buf, "true"...)
 	} else {
 		buf = append(buf, "false"...)
 	}
 
 	buf = append(buf, `,"ts":`...)
-	buf = strconv.AppendUint(buf, slot.Timestamp, 10)
+	buf = strconv.AppendUint(buf, ts, 10)
 
 	buf = append(buf, "}\n"...)
 
@@ -74,8 +70,8 @@ func NewStationWriter(filename string) (*StationWriter, error) {
 
 // WriteSlot
 // Change 3: Receive StationData and observedSeq
-func (sw *StationWriter) WriteSlot(s *StationData, slotIdx int, observedSeq uint64) error {
-	sw.line = s.MarshalSlotJSONL(sw.line[:0], slotIdx, observedSeq)
+func (sw *StationWriter) WriteSafeSlot(s *StationData, safeSeq, tid, addr uint64, isActive bool, ts uint64) error {
+	sw.line = s.marshalSafeSlotJSONL(sw.line[:0], safeSeq, tid, addr, isActive, ts)
 	_, err := sw.writer.Write(sw.line)
 	return err
 }
