@@ -3,7 +3,7 @@ import Init.Data.Nat.Basic
 namespace CoroTracerDeepDive
 
 -- ==========================================
--- 1. 核心状态空间
+-- 1. Core state space
 -- ==========================================
 structure Slot where
   payload : Nat
@@ -12,13 +12,13 @@ structure Slot where
 
 inductive CppPC where
   | Idle
-  | WritingPayload -- C++ 正在写入，此时共享内存的数据是不稳定的
+  | WritingPayload -- C++ is writing, shared memory data is unstable
   deriving DecidableEq, Repr
 
 inductive GoPC where
-  | ScanSeq      -- 第 1 步：读取并快照 Seq
-  | ReadPayload  -- 第 2 步：读取 Payload 到本地
-  | ValidateSeq  -- 第 3 步：回马枪！再次检查 Seq 防撕裂
+  | ScanSeq      -- Step 1: Read and snapshot Seq
+  | ReadPayload  -- Step 2: Read Payload locally
+  | ValidateSeq  -- Step 3: Check Seq again to prevent tearing
   deriving DecidableEq, Repr
 
 structure SystemState where
@@ -30,14 +30,14 @@ structure SystemState where
   go_last_seen    : Nat → Nat
   go_observed_seq : Nat
   go_temp_payload : Nat
-  jsonl_log       : List (Nat × Nat) -- 记录最终被确认的安全数据 (Seq, Payload)
+  jsonl_log       : List (Nat × Nat) -- Record the final confirmed safe data (Seq, Payload)
 
 -- ==========================================
--- 2. 真实并发状态机 (允许套圈与撕裂发生)
+-- 2. Real Concurrent State Machine (Allows wrap-around and tearing)
 -- ==========================================
 inductive Step : SystemState → SystemState → Prop where
 
-  -- 🔴 C++ 操作 1: 准备写入，Seq 递增变为奇数 (表示 Lock 状态)
+  -- 🔴 C++ Operation 1: Prepare to write, increment Seq to odd (Lock state)
   | cpp_start_write (s : SystemState) :
       s.cpp_pc = CppPC.Idle →
       Step s { s with
@@ -45,14 +45,14 @@ inductive Step : SystemState → SystemState → Prop where
         slots := fun i => if i = s.cpp_idx then { payload := (s.slots i).payload, seq := (s.slots i).seq + 1 } else s.slots i
       }
 
-  -- 🔴 C++ 操作 2: 极限并发写入 Payload（随时可能覆盖 Go 正在读的槽位）
+  -- 🔴 C++ Operation 2: High-concurrency Payload write (may overwrite the slot being read by Go at any time)
   | cpp_write_data (s : SystemState) (new_data : Nat) :
       s.cpp_pc = CppPC.WritingPayload →
       Step s { s with
         slots := fun i => if i = s.cpp_idx then { payload := new_data, seq := (s.slots i).seq } else s.slots i
       }
 
-  -- 🔴 C++ 操作 3: 写入完成，Seq 再次递增变为偶数 (表示 Unlock 状态)，并移动指针
+  -- 🔴 C++ Operation 3: Write completed, increment Seq to even (Unlock state) and move the pointer
   | cpp_end_write (s : SystemState) :
       s.cpp_pc = CppPC.WritingPayload →
       Step s { s with
@@ -61,7 +61,7 @@ inductive Step : SystemState → SystemState → Prop where
         cpp_idx := (s.cpp_idx + 1) % 8
       }
 
-  -- 🔵 Go 操作 1: 读取 Seq 快照。必须是偶数（非写入中）且大于 last_seen
+  -- 🔵 Go Operation 1: Read Seq snapshot. Must be even (not writing) and greater than last_seen
   | go_scan (s : SystemState) :
       s.go_pc = GoPC.ScanSeq →
       Step s { s with
@@ -71,7 +71,7 @@ inductive Step : SystemState → SystemState → Prop where
         go_observed_seq := (s.slots s.go_scan_idx).seq
       }
 
-  -- 🔵 Go 操作 2: 缓慢读取 Payload（注意：在此期间，C++ 的 step 随时可能触发，改写这个槽位）
+  -- 🔵 Go Operation 2: Read Payload slowly (Note: C++ steps may trigger at any time and overwrite this slot during this period)
   | go_read (s : SystemState) :
       s.go_pc = GoPC.ReadPayload →
       Step s { s with
@@ -79,7 +79,7 @@ inductive Step : SystemState → SystemState → Prop where
         go_temp_payload := (s.slots s.go_scan_idx).payload
       }
 
-  -- 🔵 Go 操作 3a: 读后校验成功！Seq 没有变，证明刚刚读 Payload 的时候 C++ 没有来捣乱，安全落盘。
+  -- 🔵 Go Operation 3a: Post-read validation passed! Seq unchanged, confirming C++ did not interfere during the Payload read. Safe to commit.
   | go_validate_pass (s : SystemState) :
       s.go_pc = GoPC.ValidateSeq ∧ (s.slots s.go_scan_idx).seq = s.go_observed_seq →
       Step s { s with
@@ -88,28 +88,28 @@ inductive Step : SystemState → SystemState → Prop where
         jsonl_log := (s.go_observed_seq, s.go_temp_payload) :: s.jsonl_log
       }
 
-  -- 🔵 Go 操作 3b: 读后校验失败！Seq 变了！说明发生了撕裂（Tearing）。直接丢弃临时数据，绝不更新 last_seen。
+ -- 🔵 Go Operation 3b: Post-read validation failed! Seq changed! Tearing occurred. Discard temporary data directly and **never update last_seen.
   | go_validate_fail (s : SystemState) :
       s.go_pc = GoPC.ValidateSeq ∧ (s.slots s.go_scan_idx).seq ≠ s.go_observed_seq →
       Step s { s with
         go_pc := GoPC.ScanSeq
-        -- 核心防御机制：丢弃脏数据，重新进入 Scan 阶段
+        -- Core Defense Mechanism: Discard dirty data and re-enter the scan phase
       }
 
 
 -- ==========================================
--- 3. 核心安全性证明
+-- 3. Core Security Proof
 -- ==========================================
 
--- 定理 1：系统永远不会把“撕裂”的、一半写一半没写的数据（奇数 Seq）记录到 JSONL 中
--- 1. 定义一个“健康系统”应该满足的复合不变量
+-- Theorem 1: The system will never record "torn", half-written data (odd Seq) into JSONL
+-- 1. Define the composite invariant that a "healthy system" must satisfy
 def SystemInvariant (s : SystemState) : Prop :=
-  -- 条件 A：日志里的数据都是偶数（无撕裂）
+  -- Condition A: All data in the log are even-numbered (no tearing)
   (∀ seq pay, (seq, pay) ∈ s.jsonl_log → seq % 2 = 0) ∧
-  -- 条件 B：只要 Go 开始读数据或校验数据，它攥在手里的快照必定是偶数
+  -- Condition B: Whenever Go starts reading or validating data, the snapshot it holds must be even
   (s.go_pc = GoPC.ReadPayload ∨ s.go_pc = GoPC.ValidateSeq → s.go_observed_seq % 2 = 0)
 
--- 2. 完美全覆盖证明
+-- 2. Comprehensive Proof
 theorem system_is_always_safe (s1 s2 : SystemState) (h_step : Step s1 s2) :
     SystemInvariant s1 → SystemInvariant s2 := by
   intro h_inv
@@ -117,67 +117,67 @@ theorem system_is_always_safe (s1 s2 : SystemState) (h_step : Step s1 s2) :
   constructor
 
   -- =======================================
-  -- 证明目标 A：所有写入 JSONL 的 Seq 都是偶数
+  -- Proof Goal A: All Seq values written to JSONL are even
   -- =======================================
   · intro seq pay h_in_s2
     cases h_step
-    -- 对于没有修改 jsonl_log 的状态，直接继承前提 h_log_even
+    -- For states where jsonl_log is unmodified, directly inherit the premise h_log_even
     case cpp_start_write => exact h_log_even seq pay h_in_s2
     case cpp_write_data => exact h_log_even seq pay h_in_s2
     case cpp_end_write => exact h_log_even seq pay h_in_s2
     case go_scan => exact h_log_even seq pay h_in_s2
     case go_read => exact h_log_even seq pay h_in_s2
     case go_validate_fail => exact h_log_even seq pay h_in_s2
-    -- 只有 validate_pass 修改了 Log，需要特别处理
+    -- Only validate_pass modifies the log, requiring special handling
     case go_validate_pass h_cond =>
-      -- 展开 ∈ 的定义，变成：(seq, pay) = 刚刚插入的元素 ∨ (seq, pay) 在之前的 log 中
+      -- Expand the definition of ∈ to: (seq, pay) = the newly inserted element ∨ (seq, pay) is in the previous log
       simp only [List.mem_cons] at h_in_s2
       cases h_in_s2 with
       | inl h_eq =>
-        -- 情况 1：这是最新写进 Log 的那条数据
-        -- 我们提取出目标 seq 等于 s1 阶段的 go_observed_seq
+        -- Case 1: This is the latest data written to the Log
+        -- We derive that the target seq is equal to go_observed_seq in stage s1
         injection h_eq with h_seq h_pay
         rw [h_seq]
-        -- 利用条件 B：因为当时处于 ValidateSeq，所以拿着的 observed_seq 必为偶数
+        -- Apply Condition B: Since it is in the ValidateSeq phase, the held observed_seq must be even
         apply h_obs_even
         right
         exact h_cond.left
       | inr h_mem =>
-        -- 情况 2：这是以前的老数据，用前提秒杀
+        -- Case 2: This is old existing data, resolved directly by the premise
         exact h_log_even seq pay h_mem
 
   -- =======================================
-  -- 证明目标 B：进入 Read/Validate 阶段时，攥在手里的 Seq 必为偶数
+  -- Proof Goal B: When entering the Read/Validate phase, the Seq held must be even
   -- =======================================
   · intro h_pc_s2
     cases h_step
-    -- 以下操作不会改变 go_pc 也不改变 observed_seq，状态平移
+    -- The following operations do not change go_pc or observed_seq, state transition without modification
     case cpp_start_write => apply h_obs_even; exact h_pc_s2
     case cpp_write_data => apply h_obs_even; exact h_pc_s2
     case cpp_end_write => apply h_obs_even; exact h_pc_s2
 
-    -- go_scan 阶段最核心的 if 分支推导
+    -- Core if-branch derivation in the go_scan phase
     case go_scan h_pc =>
-      dsimp at h_pc_s2 ⊢ -- 展开状态更新
+      dsimp at h_pc_s2 ⊢ -- Expand state updates
       split at h_pc_s2
       · rename_i h_if
-        -- If 判定为 True，说明读到了新的数据。
-        -- 此时目标变成了证明 (s1.slots s1.go_scan_idx).seq 是偶数，这刚好在 h_if.left 里！
+        -- If condition is True, new data has been read.
+        -- The goal now becomes proving (s1.slots s1.go_scan_idx).seq is even, which is exactly in h_if.left!
         exact h_if.left
       · rename_i h_if
-        -- If 判定为 False，系统停留在 ScanSeq 状态。
-        -- h_pc_s2 说它是 ReadPayload 或 ValidateSeq，产生矛盾！拆解后击杀。
+        -- If condition is False, the system remains in ScanSeq state.
+        -- h_pc_s2 states it is ReadPayload or ValidateSeq, resulting in a contradiction! Resolve by decomposition.
         cases h_pc_s2 with
         | inl h1 => contradiction
         | inr h2 => contradiction
 
-    -- 从 Read 进入 Validate 阶段
+    -- Transition from Read phase to Validate phase
     case go_read h_pc =>
       apply h_obs_even
       left
       exact h_pc
 
-    -- 以下两个状态会重置回 ScanSeq，显然矛盾
+    -- The following two states reset back to ScanSeq, which is clearly a contradiction
     case go_validate_pass h_cond =>
       dsimp at h_pc_s2
       cases h_pc_s2 with
