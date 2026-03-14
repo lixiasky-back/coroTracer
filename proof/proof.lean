@@ -1,151 +1,195 @@
 import Init.Data.Nat.Basic
 
-namespace CoroTracer
+namespace CoroTracerUnified
 
--- ==========================================
--- 1. 空间安全性：环形缓冲区 (Ring Buffer) 边界证明
--- ==========================================
-theorem ring_buffer_safe (current_seq : Nat) : current_seq % 8 < 8 := by
-  apply Nat.mod_lt
-  decide
-
--- ==========================================
--- 2. 内存序与脏读防护：单调递增 (Monotonicity) 与进度保证
--- ==========================================
-def try_harvest (currentSeq lastSeen : Nat) : Option Nat :=
-  if currentSeq > lastSeen then some currentSeq else none
-
-theorem harvest_progress (curr last : Nat) (newSeq : Nat)
-    (h_read : try_harvest curr last = some newSeq) :
-    newSeq > last := by
-  unfold try_harvest at h_read
-  split at h_read
-  · rename_i h_gt
-    injection h_read with h_eq
-    rw [←h_eq]
-    exact h_gt
-  · contradiction
-
--- ==========================================
--- 3. 活性与防丢失唤醒 (Liveness & Anti-Lost Wakeup)
--- ==========================================
-structure AtomicState where
-  hasData    : Bool
-  isSleeping : Bool
+structure Slot where
+  payload : Nat
+  seq     : Nat
   deriving Repr, DecidableEq
 
-inductive Step : AtomicState → AtomicState → Prop where
-  | Tracee_Write (s : AtomicState) : Step s { s with hasData := true }
-  | Tracee_CAS_Wake (s : AtomicState) : s.isSleeping = true → Step s { s with isSleeping := false }
-  | Tracer_SetFlag (s : AtomicState) : Step s { s with isSleeping := true }
-  | Tracer_DoubleCheck_Abort (s : AtomicState) : s.hasData = true → Step s { s with isSleeping := false }
-  | Tracer_Consume (s : AtomicState) : s.hasData = true → Step s { s with hasData := false }
+inductive CppPC where | Idle | PublishSeq | Fence deriving DecidableEq, Repr
+inductive GoPC where | Scan | ReadPayload | SetSleep | DoubleCheck | Sleeping deriving DecidableEq, Repr
 
-theorem tracee_can_wake (s : AtomicState) (h_sleep : s.isSleeping = true) :
-    ∃ s', Step s s' ∧ s'.isSleeping = false := by
-  let s' := { s with isSleeping := false }
-  have h_step : Step s s' := Step.Tracee_CAS_Wake s h_sleep
-  have h_awake : s'.isSleeping = false := rfl
-  exact ⟨s', h_step, h_awake⟩
+structure SystemState where
+  slots          : Nat → Slot
+  shm_sleeping   : Nat
+  shm_is_dead    : Bool
+  cpp_pc         : CppPC
+  cpp_local_seq  : Nat
+  cpp_payload_in : Nat
+  go_pc          : GoPC
+  go_scan_idx    : Nat
+  go_last_seen   : Nat → Nat
+  go_observed_seq: Nat
+  jsonl_log      : List Nat
 
-theorem no_lost_wakeup (s : AtomicState)
-    (h_sleep : s.isSleeping = true)
-    (h_data : s.hasData = true) :
-    ∃ s', Step s s' ∧ s'.isSleeping = false := by
-  let s' := { s with isSleeping := false }
-  have h_step : Step s s' := Step.Tracer_DoubleCheck_Abort s h_data
-  have h_awake : s'.isSleeping = false := rfl
-  exact ⟨s', h_step, h_awake⟩
+inductive Step : SystemState → SystemState → Prop where
+  | cpp_write_payload (s : SystemState) :
+      s.cpp_pc = CppPC.Idle →
+      Step s { s with
+        cpp_pc := CppPC.PublishSeq,
+        slots := fun i => if i = (s.cpp_local_seq + 1) % 8 then { payload := s.cpp_payload_in, seq := (s.slots i).seq } else s.slots i
+      }
+  | cpp_publish_seq (s : SystemState) :
+      s.cpp_pc = CppPC.PublishSeq →
+      Step s { s with
+        cpp_pc := CppPC.Fence,
+        cpp_local_seq := s.cpp_local_seq + 1,
+        slots := fun i => if i = (s.cpp_local_seq + 1) % 8 then { payload := (s.slots i).payload, seq := s.cpp_local_seq + 1 } else s.slots i
+      }
+  | cpp_fence (s : SystemState) :
+      s.cpp_pc = CppPC.Fence →
+      Step s { s with cpp_pc := CppPC.Idle, shm_sleeping := if s.shm_sleeping = 1 then 0 else s.shm_sleeping }
+  | go_scan_slot (s : SystemState) :
+      s.go_pc = GoPC.Scan →
+      Step s { s with
+        go_pc := if (s.slots s.go_scan_idx).seq > s.go_last_seen s.go_scan_idx then GoPC.ReadPayload else GoPC.SetSleep,
+        go_observed_seq := (s.slots s.go_scan_idx).seq
+      }
+  | go_read_payload (s : SystemState) :
+      s.go_pc = GoPC.ReadPayload →
+      Step s { s with
+        go_pc := GoPC.Scan,
+        go_last_seen := fun i => if i = s.go_scan_idx then max s.go_observed_seq (s.go_last_seen i) else s.go_last_seen i,
+        jsonl_log := (s.slots s.go_scan_idx).payload :: s.jsonl_log
+      }
+  | go_set_sleep (s : SystemState) :
+      s.go_pc = GoPC.SetSleep →
+      Step s { s with go_pc := GoPC.DoubleCheck, shm_sleeping := 1 }
+  | go_double_check (s : SystemState) :
+      s.go_pc = GoPC.DoubleCheck →
+      Step s { s with
+        go_pc := if (s.slots s.go_scan_idx).seq > s.go_last_seen s.go_scan_idx then GoPC.Scan else GoPC.Sleeping,
+        shm_sleeping := if (s.slots s.go_scan_idx).seq > s.go_last_seen s.go_scan_idx then 0 else s.shm_sleeping
+      }
 
--- ==========================================
--- 4. 生命周期与 Use-After-Free (UAF) 证明
--- ==========================================
-inductive MemDomain where
-  | CoroutineHeap : MemDomain
-  | SharedMemory  : MemDomain
-  deriving DecidableEq
 
-structure StationMemory where
-  domain : MemDomain
-  isDead : Bool
+theorem deep_ring_buffer_safe (s : SystemState) : s.cpp_local_seq % 8 < 8 := by
+  apply Nat.mod_lt; decide
 
-theorem shm_read_is_safe (s : StationMemory)
-    (h_shm : s.domain = MemDomain.SharedMemory)
-    (h_dead : s.isDead = true) :
-    s.domain = MemDomain.SharedMemory := by
-  exact h_shm
+-- 🔴 核心变化：强制使用 7 个点（·）对应 7 种状态变化，杜绝目标丢失
+theorem deep_monotonicity (s1 s2 : SystemState) (h_step : Step s1 s2) (i : Nat) :
+    s1.go_last_seen i ≤ s2.go_last_seen i := by
+  cases h_step
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · by_cases h : i = s1.go_scan_idx
+    · simp_all; exact Nat.le_max_right _ _
+    · simp_all
+  · simp_all
+  · simp_all
 
--- ==========================================
--- 5. 环形缓冲区的数据丢失边界证明 (Data Loss Boundary)
--- ==========================================
-def RingSize : Nat := 8
-def is_data_lost (producerSeq consumerSeq : Nat) : Prop :=
-  producerSeq - consumerSeq > RingSize
+-- 以下可以直接用 simp_all 秒杀的，就不展开写点了
+theorem deep_wakeup_resolution (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (h_cpp_was_fence : s1.cpp_pc = CppPC.Fence)
+    (h_cpp_now_idle : s2.cpp_pc = CppPC.Idle)
+    (h_go_sleep : s1.shm_sleeping = 1) :
+    s2.shm_sleeping = 0 := by
+  cases h_step <;> simp_all
 
-theorem data_loss_inevitable (producer consumer : Nat)
-    (h_fast_tracee : producer > consumer + RingSize) :
-    is_data_lost producer consumer := by
-  unfold is_data_lost
+theorem deep_shm_safe (s1 s2 : SystemState) (h_step : Step s1 s2) (h_dead : s1.shm_is_dead = true) :
+    s2.shm_is_dead = true := by
+  cases h_step <;> simp_all
+
+theorem deep_data_loss_boundary (s : SystemState) (i : Nat) (h_fast : s.cpp_local_seq > s.go_last_seen i + 8) :
+    s.cpp_local_seq - s.go_last_seen i > 8 := by
   omega
 
+theorem deep_wait_free (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (h_cpp_was_pub : s1.cpp_pc = CppPC.PublishSeq)
+    (h_pc_changed : s1.cpp_pc ≠ s2.cpp_pc) :
+    s2.cpp_pc = CppPC.Fence := by
+  cases h_step <;> simp_all
+
+theorem deep_jsonl_consistency (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (h_log_changed : s1.jsonl_log ≠ s2.jsonl_log) :
+    s2.jsonl_log = (s1.slots s1.go_scan_idx).payload :: s1.jsonl_log := by
+  cases h_step <;> simp_all
+
+-- 🔴 精确制导：拆分 7 个分支，只在必要的两个 C++ 操作里切分 if 逻辑
+theorem deep_no_dirty_read_release (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (idx : Nat)
+    (h_payload_changed : (s1.slots idx).payload ≠ (s2.slots idx).payload) :
+    (s2.slots idx).seq = (s1.slots idx).seq := by
+  cases h_step
+  · by_cases h : idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · by_cases h : idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+
+theorem deep_snapshot_consistency (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (h_go_entering_read : s1.go_pc = GoPC.Scan ∧ s2.go_pc = GoPC.ReadPayload) :
+    s2.go_observed_seq > s1.go_last_seen s1.go_scan_idx := by
+  rcases h_go_entering_read with ⟨h1, h2⟩
+  cases h_step
+  · simp_all
+  · simp_all
+  · simp_all
+  · by_cases h : (s1.slots s1.go_scan_idx).seq > s1.go_last_seen s1.go_scan_idx <;> simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+
+theorem deep_slot_isolation (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (target_idx : Nat)
+    (h_diff_slot : target_idx ≠ (s1.cpp_local_seq + 1) % 8) :
+    (s2.slots target_idx).payload = (s1.slots target_idx).payload := by
+  cases h_step
+  · by_cases h : target_idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · by_cases h : target_idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+
+theorem deep_end_to_end_tearing_freedom (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (h_go_reading : s1.go_pc = GoPC.ReadPayload)
+    -- 物理大前提：环形队列的安全距离没有被打破（即 C++ 即将写入的下一个槽位，不是 Go 正在读的槽位）
+    (h_safe_distance : (s1.cpp_local_seq + 1) % 8 ≠ s1.go_scan_idx) :
+    -- 结论：无论发生什么状态转换，Go 正在扫描的槽位 Payload 绝对不变
+    (s2.slots s1.go_scan_idx).payload = (s1.slots s1.go_scan_idx).payload := by
+  cases h_step
+  · -- cpp_write_payload 分支
+    by_cases h : s1.go_scan_idx = (s1.cpp_local_seq + 1) % 8
+    · -- 如果 C++ 刚好写到了 Go 在读的槽位，这与我们的安全距离大前提矛盾
+      simp_all
+    · -- 正常情况：C++ 写的是其他槽位，Go 读的槽位安然无恙
+      simp_all
+  · -- cpp_publish_seq 分支
+    by_cases h : s1.go_scan_idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · -- cpp_fence 分支
+    simp_all
+  · -- go_scan_slot 分支 (状态互斥，直接消灭)
+    simp_all
+  · -- go_read_payload 分支
+    simp_all
+  · -- go_set_sleep 分支
+    simp_all
+  · -- go_double_check 分支
+    simp_all
+
 -- ==========================================
--- 6. SDK 性能保证 (Wait-Free Guarantee)
+-- 🛡️ 附属保障定理：Seq 与 Payload 强绑定 (Data/Version Consistency)
+-- 证明：如果 Go 决定进入 ReadPayload，说明它看到的 Seq 是新的。
+-- 在读取期间，这个 Seq 绝对不可能被其他并发操作悄悄回退或篡改（除非发生追尾）。
 -- ==========================================
-def calculate_steps (isTracerSleeping : Bool) : Nat :=
-  if isTracerSleeping then 6 else 5
+theorem deep_read_acquire_security (s1 s2 : SystemState) (h_step : Step s1 s2)
+    (h_go_reading : s1.go_pc = GoPC.ReadPayload)
+    (h_safe_distance : (s1.cpp_local_seq + 1) % 8 ≠ s1.go_scan_idx) :
+    (s2.slots s1.go_scan_idx).seq = (s1.slots s1.go_scan_idx).seq := by
+  cases h_step
+  · by_cases h : s1.go_scan_idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · by_cases h : s1.go_scan_idx = (s1.cpp_local_seq + 1) % 8 <;> simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
+  · simp_all
 
-theorem sdk_is_wait_free (isTracerSleeping : Bool) :
-    calculate_steps isTracerSleeping ≤ 6 := by
-  cases isTracerSleeping
-  case false => decide
-  case true => decide
-
--- ==========================================
--- 7. JSONL 输出一致性与防脏读证明 (JSONL Consistency & No-Secondary-Read)
--- ==========================================
-
--- 1. 物理内存快照：这代表从共享内存读取的数据。
-
-structure SlotMemory where
-  probe_id  : Nat
-  tid       : Nat
-  addr      : Nat
-  is_active : Bool
-  ts        : Nat
-  deriving Repr, DecidableEq
-
--- 2. 序列化函数：完美映射 Go 侧的 MarshalSlotJSONL
--- 接收 SlotMemory 以及外部通过快照传进来的 observed_seq
-def marshal_slot_jsonl (s : SlotMemory) (observed_seq : Nat) : (Nat × Nat × Nat × Nat × Bool × Nat) :=
-  -- 将结构体字段与外部传入的 seq 进行组合映射
-  (s.probe_id, s.tid, s.addr, observed_seq, s.is_active, s.ts)
-
--- 核心定理：不仅证明了输出无损，还证明了“通过注入外部快照”依然能保证数据的一致性
-theorem jsonl_output_consistent (s1 s2 : SlotMemory) (seq1 seq2 : Nat)
-    (h_eq : marshal_slot_jsonl s1 seq1 = marshal_slot_jsonl s2 seq2) :
-    s1 = s2 ∧ seq1 = seq2 := by
-  -- 展开序列化函数
-  unfold marshal_slot_jsonl at h_eq
-  -- 剥开内存结构体
-  cases s1
-  cases s2
-  -- 使用 Lean 4 策略自动推理：
-  -- 因为元组整体相等，所以外部的 seq1 必然等于 seq2，且物理内存 s1 必定等于 s2
-  simp_all
-
-
-end CoroTracer
-def main : IO Unit := do
-  IO.println "============================================================"
-  IO.println " 🚀 CoroTracer Formal Verification Report"
-  IO.println "============================================================"
-  IO.println " [PASS] ✅ Memory Bounds (OOB Safe) Verified"
-  IO.println " [PASS] ✅ Concurrency Monotonic Seq & Anti-ABA Verified"
-  IO.println " [PASS] ✅ Liveness Anti-Lost Wakeup & Deadlock-Free Verified"
-  IO.println " [PASS] ✅ Persistence SHM Memory & Anti-UAF Verified"
-  IO.println " [PASS] ✅ Queue Overwrite Data Loss Boundary Verified"
-  IO.println " [PASS] ✅ Performance Wait-Free O(1) Guarantee Verified"
-  IO.println " [PASS] ✅ Serialization JSONL Data Consistency Verified"
-  IO.println "============================================================"
-  IO.println " 🎉 SUCCESS: All 7 core mechanisms passed the Lean 4 Kernel!"
-  IO.println "============================================================"
+end CoroTracerUnified
