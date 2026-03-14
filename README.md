@@ -11,7 +11,7 @@
 > **Why I built this**: I was dealing with a really annoying bug in my M:N scheduler. Under heavy load, throughput would just flatline to zero. I ran ASAN and TSAN, but they came up empty because no memory was actually corrupted. It turned out to be a "lost wakeup"—coroutines were stuck forever waiting on a closed file descriptor. Traditional tools just can't catch these logical state machine breaks. I wrote coroTracer to track this exact issue down, and it worked.
 
 coroTracer is an out-of-process tracer for M:N coroutine schedulers. It tracks down logical deadlocks, broken state machines, and coroutine leaks.
-
+> Data acquisition has been mathematically modeled and formally verified in Lean 4. Screenshots are shown below. The proof is available [here](./proof/proof.lean). Full documentation will be added later.
 ---
 
 ## Architecture
@@ -129,7 +129,10 @@ During a massive spike of `EOF/RST` events, the worker thread correctly called `
 > Full spec in [cTP.md](docs/cTP.md)
 
 ---
-
+## Lean 4 Proof Screenshot
+> Obviously, no issues found.
+![screenshot](./source/proof.png)
+---
 ## Language Support
 Right now, I've provided a C++20 SDK. But since the core just relies on a strict memory mapping contract, you can easily write a probe for Rust, Zig, or C—basically anything that supports `mmap`.
 
