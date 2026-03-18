@@ -90,19 +90,13 @@ struct promise_type : public corotracer::PromiseMixin {
 };
 ```
 
-### 3. 生成报告
-
-```bash
-# 生成 Markdown 诊断报告 (自动侦测 SIGBUS 和 丢失唤醒)
-./coroTracer -deepdive -out trace.jsonl
-
-# 生成交互式 HTML 大屏
-./coroTracer -html -out trace.jsonl
-```
+### 3. 生成报告(已删)
+**目前已经删了,原有为demo附加功能,后续不会提供分析相关内容,目标不是APM平台,后续相关功能会提供导出其他包括但不限于sqlite的数据库**
 
 ---
 
 ## 实战：抓获“丢失唤醒”
+>版本已过时,但事实是真的,有需要可以查看git记录
 
 在测试我自己的 [tiny_coro](https://github.com/lixiasky-back/tiny_coro-build_your_own_MN_scheduler) 调度器时，程序在重压下时不时假死。吞吐掉零，但各类 Sanitizer 检查全绿。
 

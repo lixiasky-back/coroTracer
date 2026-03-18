@@ -9,9 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/lixiasky-back/coroTracer/deepdive"
 	"github.com/lixiasky-back/coroTracer/engine"
-	"github.com/lixiasky-back/coroTracer/export"
 )
 
 func main() {
@@ -21,31 +19,7 @@ func main() {
 	shmPath := flag.String("shm", "/tmp/corotracer.shm", "Path to shared memory file")
 	sockPath := flag.String("sock", "/tmp/corotracer.sock", "Path to Unix Domain Socket")
 	logPath := flag.String("out", "trace_output.jsonl", "Output JSONL file path")
-	deepDiveMode := flag.Bool("deepdive", false, "Run offline analysis on an existing JSONL trace file")
-	htmlExportMode := flag.Bool("html", false, "Export trace to interactive HTML dashboard")
 	flag.Parse()
-
-	// 🔀 Branch logic: Enter in-depth analysis mode
-	if *deepDiveMode {
-		inPath := *logPath // Reuse the -out parameter as the input file
-		outMd := "coro_report.md"
-
-		fmt.Printf("🚀 Starting DeepDive Analysis on %s...\n", inPath)
-		// Call functions from the deepdive package
-		if err := deepdive.RunDeepDive(inPath, outMd); err != nil {
-			log.Fatalf("DeepDive failed: %v", err)
-		}
-		os.Exit(0)
-	}
-
-	if *htmlExportMode {
-		inPath := *logPath
-		outHtml := "coro_dashboard.html"
-		if err := export.GenerateHTML(inPath, outHtml); err != nil {
-			log.Fatalf("HTML Export failed: %v", err)
-		}
-		os.Exit(0)
-	}
 
 	if *cmdStr == "" {
 		log.Fatal("Error: -cmd parameter is required. Example: ./coroTracer -n 100 -cmd './redis-test'")

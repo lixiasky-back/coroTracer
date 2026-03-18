@@ -90,19 +90,13 @@ struct promise_type : public corotracer::PromiseMixin {
 };
 ```
 
-### 3. Get the reports
-
-```bash
-# Markdown report (auto-detects SIGBUS and lost wakeups)
-./coroTracer -deepdive -out trace.jsonl
-
-# Interactive HTML dashboard
-./coroTracer -html -out trace.jsonl
-```
+### 3. Get the reports(Removed)
+**This feature has been removed. It was originally an additional demo function, and no analysis-related content will be provided in the future. Our product is not intended to be an APM platform. In subsequent versions, related functions will support exporting to other databases including but not limited to SQLite.**
 
 ---
 
 ## Catching a "Lost Wakeup"
+>The version is outdated, but the information is accurate. If needed, you can check the Git history.
 
 When I was testing my [tiny_coro](https://github.com/lixiasky-back/tiny_coro-build_your_own_MN_scheduler) scheduler, it kept freezing under heavy load. Throughput dropped to zero, but the sanitizers said everything was fine.
 
