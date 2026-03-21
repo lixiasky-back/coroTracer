@@ -119,7 +119,7 @@ struct TracedAwaiter {
 class PromiseMixin {
 public:
     StationData* my_station = nullptr;
-    uint64_t current_seq = 0;
+    uint64_t event_count = 0;
 
     PromiseMixin() {
         if (!g_header) return;
