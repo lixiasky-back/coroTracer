@@ -12,6 +12,7 @@
 
 coroTracer is an out-of-process tracer for M:N coroutine schedulers. It tracks down logical deadlocks, broken state machines, and coroutine leaks.
 > Data acquisition has been mathematically modeled and formally verified in Lean 4. Screenshots are shown below. The proof is available [here](./proof/proof.lean). Full documentation will be added later.
+> Added new Lean4 proofs that establish liveness. The proof document is postponed a bit longer—probably coming next week or the week after.
 ---
 
 ## Architecture

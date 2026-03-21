@@ -190,4 +190,63 @@ theorem system_is_always_safe (s1 s2 : SystemState) (h_step : Step s1 s2) :
       | inl h1 => contradiction
       | inr h2 => contradiction
 
+-- ==========================================
+-- 4. Accessibility Validity Certificate
+-- ==========================================
+
+theorem go_obstruction_free_liveness
+    (s0 s1 s2 s3 : SystemState)
+    (step1 : Step s0 s1)
+    (step2 : Step s1 s2)
+    (step3 : Step s2 s3)
+    (h_go_pc : s0.go_pc = GoPC.ScanSeq)
+    (h_new_data : (s0.slots s0.go_scan_idx).seq > s0.go_last_seen s0.go_scan_idx)
+    (h_even : (s0.slots s0.go_scan_idx).seq % 2 = 0)
+    -- Core Fix: Must provide silent guarantee throughout the entire 3-step cycle!
+    (h_quiet0 : s0.cpp_pc = CppPC.Idle)
+    (h_quiet1 : s1.cpp_pc = CppPC.Idle)
+    (h_quiet2 : s2.cpp_pc = CppPC.Idle)
+    (h_quiet3 : s3.cpp_pc = CppPC.Idle) :
+    s3.go_pc = GoPC.ScanSeq ∧
+    (s3.go_observed_seq, s3.go_temp_payload) ∈ s3.jsonl_log := by
+
+  -- [Step 1: Deduction from s0 to s1]
+  cases step1
+  case cpp_start_write => contradiction
+  case cpp_write_data new_data h => rw [h_quiet0] at h; contradiction
+  case cpp_end_write h => rw [h_quiet0] at h; contradiction
+  case go_read h => rw [h_go_pc] at h; contradiction
+  case go_validate_pass h => have hp := h.left; rw [h_go_pc] at hp; contradiction
+  case go_validate_fail h => have hp := h.left; rw [h_go_pc] at hp; contradiction
+  case go_scan h_pc =>
+    have h_if : (s0.slots s0.go_scan_idx).seq % 2 = 0 ∧ (s0.slots s0.go_scan_idx).seq > s0.go_last_seen s0.go_scan_idx := ⟨h_even, h_new_data⟩
+    have h_s1_pc_is_read : (if (s0.slots s0.go_scan_idx).seq % 2 = 0 ∧ (s0.slots s0.go_scan_idx).seq > s0.go_last_seen s0.go_scan_idx then GoPC.ReadPayload else GoPC.ScanSeq) = GoPC.ReadPayload := by simp [h_if]
+
+    -- [Step 2: Deduction from s1 to s2]
+    cases step2
+    case cpp_start_write => contradiction
+    -- Adopt the silence assumption at moment 1
+    case cpp_write_data new_data h => rw [h_quiet1] at h; contradiction
+    case cpp_end_write h => rw [h_quiet1] at h; contradiction
+    case go_scan h => rw [h_s1_pc_is_read] at h; contradiction
+    case go_validate_pass h => have hp := h.left; rw [h_s1_pc_is_read] at hp; contradiction
+    case go_validate_fail h => have hp := h.left; rw [h_s1_pc_is_read] at hp; contradiction
+    case go_read h2 =>
+
+      -- [Step 3: Deduction from s2 to s3]
+      cases step3
+      case cpp_start_write => contradiction
+      -- Adopt the silence assumption at moment 2
+      case cpp_write_data new_data h => rw [h_quiet2] at h; contradiction
+      case cpp_end_write h => rw [h_quiet2] at h; contradiction
+      case go_scan h => contradiction
+      case go_read h => contradiction
+      case go_validate_fail h =>
+        have hp := h.right
+        exact False.elim (hp rfl)
+      case go_validate_pass _ =>
+        constructor
+        · rfl
+        · simp [List.mem_cons]
+
 end CoroTracerDeepDive

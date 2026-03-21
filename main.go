@@ -65,7 +65,7 @@ func main() {
 		<-sigChan
 		fmt.Println("\n🛑 Received interrupt signal, shutting down...")
 		if cmd.Process != nil {
-			cmd.Process.Signal(syscall.SIGTERM) // 顺手把子进程也杀掉
+			cmd.Process.Signal(syscall.SIGTERM)
 		}
 		tracer.Close()
 		os.Exit(0)
