@@ -1,18 +1,38 @@
-# coroTracer: Cross-language, zero-copy coroutine observability
+# coroTracer: Cross-Language, Zero-Copy Coroutine Observability
 
 ![Go Engine](https://img.shields.io/badge/Engine-Go_1.21+-00ADD8.svg)
 ![SDK C++](https://img.shields.io/badge/SDK-C++20-blue.svg)
 ![Arch](https://img.shields.io/badge/Arch-Language_Agnostic-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![zread](https://img.shields.io/badge/Ask_Zread-_.svg?style=flat&color=00b0aa&labelColor=000000&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTYxNTYgMS42MDAxSDIuMjQxNTZDMS44ODgxIDEuNjAwMSAxLjYwMTU2IDEuODg2NjQgMS42MDE1NiAyLjI0MDFWNC45NjAxQzEuNjAxNTYgNS4zMTM1NiAxLjg4ODEgNS42MDAxIDIuMjQxNTYgNS42MDAxSDQuOTYxNTZDNS4zMTUwMiA1LjYwMDEgNS42MDE1NiA1LjMxMzU2IDUuNjAxNTYgNC45NjAxVjIuMjQwMUM1LjYwMTU2IDEuODg2NjQgNS4zMTUwMiAxLjYwMDEgNC45NjE1NiAxLjYwMDFaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00Ljk2MTU2IDEwLjM5OTlIMi4yNDE1NkMxLjg4ODEgMTAuMzk5OSAxLjYwMTU2IDEwLjY4NjQgMS42MDE1NiAxMS4wMzk5VjEzLjc1OTlDMS42MDE1NiAxNC4xMTM0IDEuODg4MSAxNC4zOTk5IDIuMjQxNTYgMTQuMzk5OUg0Ljk2MTU2QzUuMzE1MDIgMTQuMzk5OSA1LjYwMTU2IDE0LjExMzQgNS42MDE1NiAxMy43NTk5VjExLjAzOTlDNS42MDE1NiAxMC42ODY0IDUuMzE1MDIgMTAuMzk5OSA0Ljk2MTU2IDEwLjM5OTlaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik0xMy43NTg0IDEuNjAwMUgxMS4wMzg0QzEwLjY4NSAxLjYwMDEgMTAuMzk4NCAxLjg4NjY0IDEwLjM5ODQgMi4yNDAxVjQuOTYwMUMxMC4zOTg0IDUuMzEzNTYgMTAuNjg1IDUuNjAwMSAxMS4wMzg0IDUuNjAwMUgxMy43NTg0QzE0LjExMTkgNS42MDAxIDE0LjM5ODQgNS4zMTM1NiAxNC4zOTg0IDQuOTYwMVYyLjI0MDFDMTQuMzk4NCAxLjg4NjY0IDE0LjExMTkgMS42MDAxIDEzLjc1ODQgMS42MDAxWiIgZmlsbD0iI2ZmZiIvPgo8cGF0aCBkPSJNNCAxMkwxMiA0TDQgMTJaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00IDEyTDEyIDQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K&logoColor=ffffff)
 
 ![UDSWakeupMechanics.gif](source/UDSWakeupMechanics.gif)
 
-> **Why I built this**: I was dealing with a really annoying bug in my M:N scheduler. Under heavy load, throughput would just flatline to zero. I ran ASAN and TSAN, but they came up empty because no memory was actually corrupted. It turned out to be a "lost wakeup"—coroutines were stuck forever waiting on a closed file descriptor. Traditional tools just can't catch these logical state machine breaks. I wrote coroTracer to track this exact issue down, and it worked.
+> **Why I built this**: while debugging one of my own M:N schedulers, I ran into an especially nasty failure mode. Under heavy load, throughput would suddenly collapse to zero, but ASAN and TSAN stayed silent because nothing was corrupt in the usual memory-safety sense. It turned out to be a classic `lost wakeup`: the coroutine had become logically unreachable, but traditional tooling was terrible at surfacing that kind of state-machine break. coroTracer was built for exactly this class of problem.
 
-coroTracer is an out-of-process tracer for M:N coroutine schedulers. It tracks down logical deadlocks, broken state machines, and coroutine leaks.
-> Data acquisition has been mathematically modeled and formally verified in Lean 4. Screenshots are shown below. The proof is available [here](./proof/proof.lean). Full documentation will be added later.
-> Added new Lean4 proofs that establish liveness. The proof document is ok.
+coroTracer is an **out-of-process** coroutine trace collector.  
+It is designed for M:N coroutine schedulers, with a very specific goal:
+
+- capture coroutine state transitions
+- minimize interference with the target process
+- emit reusable raw traces
+- provide a reliable low-level foundation for later offline analysis and database export
+
+It is not positioned as an APM product or an online analysis platform.  
+At the moment, this repository is focused on two things:
+
+1. **safely collecting coroutine state into JSONL**
+2. **exporting an existing JSONL trace into SQLite / MySQL / PostgreSQL / CSV**
+
+The core safety properties of the collection protocol have also been modeled and proved in Lean 4. Relevant files:
+
+- [proof/proof.lean](./proof/proof.lean)
+- [proof.md](./proof/proof.md)
+- [proof_en.md](./proof/proof_en.md)
+- [docs/cli_usage.md](./docs/cli_usage.md)
+
+> **Project status**: at this point the project is already usable end to end. The collection, persistence, and export pipeline is working as a closed loop. If I had to point out the one remaining obvious limitation, it is that collection capacity is still based on a **fixed finite coroutine count**, rather than a dynamically growing capacity. Aside from that, the project is already usable in practice. Updates will continue, but the pace will likely slow down significantly, probably much more than before.
+> This update was focused on data format conversion and export, and did not touch the core collection path. Codex genuinely improved iteration speed a lot here, which helped this release land much faster.
+
 ---
 
 ## Architecture
@@ -28,107 +48,390 @@ coroTracer is an out-of-process tracer for M:N coroutine schedulers. It tracks d
 |                       |               ^               |                       |
 |       [ Socket ]      |---(Wakeup)---UDS---(Listen)---|      [ File I/O ]     |
 +-----------------------+                               +-----------------------+
-                                                                        | (Append)
+                                                                        |
                                                                         v
-        +-------------------------+      [ DeepDive ]           +---------------+
-        | Interactive HTML Portal | <--- analyzer.go ---------  |  trace.jsonl  |
-        +-------------------------+      (Heuristics)           +---------------+
+                                                               +------------------+
+                                                               |  trace_output    |
+                                                               |     .jsonl       |
+                                                               +------------------+
+                                                                        |
+                                                                        v
+                                                          +----------------------------------+
+                                                          | SQLite / MySQL / PostgreSQL / CSV |
+                                                          +----------------------------------+
 ```
 
 ---
 
-## How it works
+## Current Capabilities
 
-The main idea is simple: keep the tracer out of the target process's way.
+### 1. Trace Collection Mode
 
-* **Execution Plane**: The C++/Rust SDK writes state changes directly into pre-allocated shared memory using lock-free data structures.
-* **Observation Plane**: A separate Go engine pulls this data in the background to build the topology. No network overhead, zero context switching.
+The Go engine is responsible for:
 
-### The Gritty Details
+- creating shared memory
+- creating the Unix Domain Socket
+- launching the target process
+- continuously harvesting coroutine events from shared memory
+- writing the result as JSONL
 
-* **cTP Memory Contract**: It runs on `mmap`. We force a strict 1024-byte alignment so different compilers don't mess things up with implicit padding.
-* **64-byte Cache Line Alignment**: Event slots match CPU cache lines exactly. This stops multi-threaded false sharing dead in its tracks during concurrent writes.
-* **Zero-Copy**: Data moves purely via pointer offsets and hardware atomics. No RPCs, zero serialization.
-* **Smart UDS Wakeup**:
-    * When the Go engine is idle, it sets a `TracerSleeping` flag in the shared memory.
-    * The SDK does a quick atomic load to check this flag before writing.
-    * It only fires a 1-byte Unix Domain Socket (UDS) signal to wake the engine *if* it's actually asleep. This prevents syscall storms when throughput is high.
+Each JSONL line looks roughly like this:
+
+```json
+{"probe_id":123,"tid":456,"addr":"0x0000000000000000","seq":2,"is_active":true,"ts":123456789}
+```
+
+Those fields correspond to the source-level `TraceRecord`:
+
+- `probe_id`: unique coroutine probe identifier
+- `tid`: real OS thread ID
+- `addr`: suspension address or related coroutine address
+- `seq`: slot sequence number
+- `is_active`: whether the coroutine is currently active
+- `ts`: timestamp
+
+### 2. Export Mode
+
+The repository now includes an `export/` directory that supports converting an **existing JSONL** trace into:
+
+- a SQLite database
+- a MySQL database
+- a PostgreSQL database
+- a DataFrame-friendly CSV file
+
+This is explicitly a **second-stage export** from an existing JSONL trace.  
+It is not "trace and write to a database at the same time."
+
+### 3. C++20 SDK
+
+The repository currently ships a C++20 header-only SDK:
+
+- [SDK/c++/coroTracer.h](./SDK/c++/coroTracer.h)
+
+Its responsibilities are:
+
+- attaching to shared memory
+- attaching to the UDS wakeup channel
+- writing coroutine state on suspend / resume
+- obeying the cTP memory contract
+
+---
+
+## Core Mechanism
+
+The central design idea is simple:
+
+> **physically separate the execution plane from the observation plane.**
+
+The target process only writes state into shared memory.  
+The Go collector harvests those states asynchronously from outside the process, instead of pushing complicated tracing logic back into the target.
+
+### 1. Shared Memory Protocol (cTP)
+
+The protocol-level document is here:
+
+- [docs/cTP.md](./docs/cTP.md)
+
+There are three essential ideas:
+
+1. `GlobalHeader` and `StationData` are forced into fixed layouts
+2. `Epoch` is aligned to a 64-byte cache line
+3. the writer and reader coordinate through a lock-free `seq` discipline
+
+### 2. The C++ Write Protocol
+
+The writer does not simply blast fields into memory without structure.  
+It follows a strict order:
+
+1. first make `seq` odd to mark "write in progress"
+2. then write the payload
+3. finally make `seq` even to mark "write complete"
+
+This corresponds to `PromiseMixin::write_trace` in [SDK/c++/coroTracer.h](./SDK/c++/coroTracer.h).
+
+### 3. The Go Read Protocol
+
+The Go reader also does not trust a slot just because data is present.  
+It follows three steps:
+
+1. read `seq` once
+2. only if `seq` is even and newer than local `lastSeen` does it copy the payload
+3. read `seq` again after the copy
+4. only if the two `seq` values match does it write JSONL
+
+This is implemented in:
+
+- [structure/station.go](structure/station.go)
+- [structure/jsonl.go](structure/jsonl.go)
+
+### 4. Smart UDS Wakeup
+
+To avoid wasting CPU cycles when traffic is low:
+
+- the Go side sets `TracerSleeping = 1` while idle
+- once the C++ side finishes a write and notices the tracer is sleeping, it sends a 1-byte UDS wakeup signal
+
+This avoids syscall storms under heavy throughput while also avoiding a pure busy-spin under light throughput.
 
 ---
 
 ## Quick Start
 
-### 1. Spin up the engine
-
-The Go engine handles the SHM/UDS allocation and starts your app.
+### 1. Build
 
 ```bash
-# Build the tracer
 go build -o coroTracer main.go
+```
 
-# Run it
+### 2. Trace a Target Program
+
+```bash
 ./coroTracer -n 256 -cmd "./your_target_app" -out trace.jsonl
 ```
 
-### 2. Drop in the SDK (C++20 Example)
+This does the following:
 
-Your app grabs the IPC config automatically from environment variables.
+- preallocates 256 stations
+- launches `./your_target_app`
+- writes the trace into `trace.jsonl`
+
+One important constraint:
+
+- `-cmd` mode is collection-only
+- it does not export into a database in the same run
+
+So collection and export are **two separate stages**.
+
+### 3. Integrate the C++ SDK
+
+The target program inherits IPC configuration through environment variables.
+
+The smallest possible integration looks like this:
 
 ```cpp
 #include "coroTracer.h"
 
 int main() {
-    corotracer::InitTracer(); // Sets up mmap and connections
+    corotracer::InitTracer();
     // ... start your scheduler
 }
 ```
 
-Inherit `PromiseMixin` to hook the lifecycle:
+For coroutine promises, you can inherit from `PromiseMixin`:
 
 ```cpp
 struct promise_type : public corotracer::PromiseMixin {
-    // Your code here. coroTracer handles await_suspend / await_resume under the hood.
+    // your business logic
 };
 ```
 
-### 3. Get the reports(Removed)
-**This feature has been removed. It was originally an additional demo function, and no analysis-related content will be provided in the future. Our product is not intended to be an APM platform. In subsequent versions, related functions will support exporting to other databases including but not limited to SQLite.**
+The SDK records the state transitions associated with `await_suspend` and `await_resume`.
 
 ---
 
-## Catching a "Lost Wakeup"
->The version is outdated, but the information is accurate. If needed, you can check the Git history.
+## Exporting JSONL
 
-When I was testing my [tiny_coro](https://github.com/lixiasky-back/tiny_coro-build_your_own_MN_scheduler) scheduler, it kept freezing under heavy load. Throughput dropped to zero, but the sanitizers said everything was fine.
+Export mode only works on an **already existing JSONL file**.  
+It cannot be used together with `-cmd`.
 
-I attached coroTracer, and the report showed exactly 47 coroutines permanently stuck in a `Suspended` state. Their instruction pointers were all parked at `co_await AsyncRead(fd)`.
+So this is allowed:
 
-**What went wrong:**
-During a massive spike of `EOF/RST` events, the worker thread correctly called `close(fd)`, but it completely missed calling `.resume()` for the coroutines tied to that descriptor. The socket was gone, but the state machine logic was broken. Those coroutines were just stranded in the heap, waiting for a wakeup that would never happen.
+```bash
+./coroTracer -export sqlite -in trace.jsonl
+```
 
-* Raw trace: [trace.jsonl](example/trace.jsonl)
-* Diagnostic report: [coro_report.md](example/coro_report.md)
-* Dashboard preview:
-  ![Dashboard](example/coro_dashboard.png)
+But this is not:
+
+```bash
+./coroTracer -cmd "./your_target_app" -export sqlite
+```
+
+### 1. Export to SQLite
+
+```bash
+./coroTracer -export sqlite -in trace.jsonl -sqlite-out trace.sqlite
+```
+
+Notes:
+
+- by default the output filename is derived as `<input>.sqlite`
+- runtime requires a local `sqlite3` binary
+
+### 2. Export to CSV (DataFrame-Friendly)
+
+```bash
+./coroTracer -export csv -in trace.jsonl -csv-out trace.csv
+```
+
+That CSV can be consumed directly by:
+
+- pandas
+- polars
+- DuckDB
+- R
+
+### 3. Export to MySQL
+
+```bash
+./coroTracer \
+  -export mysql \
+  -in trace.jsonl \
+  -db-host 127.0.0.1 \
+  -db-port 3306 \
+  -db-user root \
+  -db-password your_password \
+  -db-name coro_tracer \
+  -db-table coro_trace_events
+```
+
+If you use a Unix socket, you can also do:
+
+```bash
+./coroTracer \
+  -export mysql \
+  -in trace.jsonl \
+  -db-user root \
+  -db-password your_password \
+  -mysql-socket /tmp/mysql.sock
+```
+
+Notes:
+
+- runtime requires a local `mysql` CLI
+- the exporter creates the database and table automatically, then inserts the data
+
+### 4. Export to PostgreSQL
+
+```bash
+./coroTracer \
+  -export postgresql \
+  -in trace.jsonl \
+  -db-host 127.0.0.1 \
+  -db-port 5432 \
+  -db-user postgres \
+  -db-password your_password \
+  -db-name coro_tracer \
+  -db-table coro_trace_events \
+  -pg-sslmode disable
+```
+
+Notes:
+
+- runtime requires a local `psql` CLI
+- the exporter checks whether the target database exists and creates it when needed
+- by default it uses `postgres` as the maintenance database; you can override that with `-pg-maintenance-db`
+
+### 5. Common Export Flags
+
+The current export-related flags are:
+
+- `-export`
+- `-in`
+- `-sqlite-out`
+- `-csv-out`
+- `-db-cli`
+- `-db-host`
+- `-db-port`
+- `-db-user`
+- `-db-password`
+- `-db-name`
+- `-db-table`
+- `-mysql-socket`
+- `-pg-maintenance-db`
+- `-pg-sslmode`
+
+In particular:
+
+- `-db-password` is intended for the user's own database password
+- `-db-cli` overrides the default CLI command name
+  - MySQL defaults to `mysql`
+  - PostgreSQL defaults to `psql`
+
+For the full parameter reference, see:
+
+- [docs/cli_usage.md](docs/cli_usage.md)
 
 ---
 
-## cTP Memory Layout
+## Lean 4 Proof
 
-| Offset | Field | Size | Description |
-| :--- | :--- | :--- | :--- |
-| `0x00` | `MagicNumber` | 8B | `0x434F524F54524352` |
-| `0x14` | `SleepFlag` | 4B | Engine sleep flag (1 = Sleeping) |
-| `0x40` | `EventSlots` | 512B | 8 ring buffers aligned to 64B |
+One of the more important aspects of this project is that the collection protocol is not justified by intuition alone.  
+It has been formally modeled.
 
-> Full spec in [cTP.md](docs/cTP.md)
+A good reading order is:
+
+1. [proof/proof.lean](./proof/proof.lean)
+2. [proof.md](./proof/proof.md)
+3. [proof_en.md](./proof/proof_en.md)
+
+The proof covers the following core properties:
+
+- Go does not commit half-written dirty data into the log
+- if the writer leaves a short non-interfering window, Go is guaranteed to complete one successful harvest
+
+The main source-level correspondence is in:
+
+- [SDK/c++/coroTracer.h](./SDK/c++/coroTracer.h)
+- [structure/station.go](./structure/station.go)
+- [structure/jsonl.go](./structure/jsonl.go)
 
 ---
-## Lean 4 Proof Screenshot
-> Obviously, no issues found.
-![screenshot](./source/proof.png)
----
-## Language Support
-Right now, I've provided a C++20 SDK. But since the core just relies on a strict memory mapping contract, you can easily write a probe for Rust, Zig, or C—basically anything that supports `mmap`.
 
-> Contact: lixia.chat@outlook.com
+## Current Boundaries
+
+To avoid confusion, here are the current project boundaries.
+
+### 1. This Repository Is Not an Analysis Platform
+
+What it provides today is:
+
+- low-level collection
+- JSONL persistence
+- export into databases / CSV
+
+It no longer follows the old built-in "report generator / HTML analyzer" direction.
+
+### 2. The Current Focus Is the C++20 SDK
+
+Although the protocol itself is language-agnostic, the SDK currently shipped in this repository is C++20.
+
+Rust, Zig, and C are all possible in principle because the foundation only depends on:
+
+- `mmap`
+- fixed ABI layout
+- atomic read/write discipline
+
+A Rust SDK may be added later.
+
+### 3. Runtime External Dependencies
+
+If you use export mode, the current implementation depends on local CLI tools:
+
+- SQLite: `sqlite3`
+- MySQL: `mysql`
+- PostgreSQL: `psql`
+
+This is intentional. It keeps the Go dependency set light and avoids pulling in extra database drivers.
+
+---
+
+## Repository Layout
+
+The most important files and directories right now are:
+
+- [main.go](main.go): entry point, switches between trace mode and export mode
+- [engine/engine.go](engine/engine.go): shared memory, UDS, and the hot harvest loop
+- [structure/station.go](structure/station.go): core read protocol
+- [structure/jsonl.go](structure/jsonl.go): JSONL output
+- [export/](export/): SQLite / MySQL / PostgreSQL / CSV export
+- [SDK/c++/coroTracer.h](SDK/c++/coroTracer.h): C++20 SDK
+- [docs/cTP.md](docs/cTP.md): memory protocol documentation
+- [proof/proof.lean](./proof/proof.lean): Lean 4 proof
+- [proof.md](./proof/proof.md): detailed Chinese proof walkthrough
+- [proof_en.md](./proof/proof_en.md): detailed English proof walkthrough
+
+---
+
+## Contact
+
+> lixia.chat@outlook.com

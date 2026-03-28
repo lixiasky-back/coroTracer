@@ -7,9 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/lixiasky-back/coroTracer/engine"
+	exporter "github.com/lixiasky-back/coroTracer/export"
 )
 
 func main() {
@@ -19,10 +22,53 @@ func main() {
 	shmPath := flag.String("shm", "/tmp/corotracer.shm", "Path to shared memory file")
 	sockPath := flag.String("sock", "/tmp/corotracer.sock", "Path to Unix Domain Socket")
 	logPath := flag.String("out", "trace_output.jsonl", "Output JSONL file path")
+	exportKind := flag.String("export", "", "Optional export target: sqlite | mysql | postgres | postgresql | dataframe | csv")
+	inputPath := flag.String("in", "", "Input JSONL file for export-only mode. Defaults to -out.")
+	sqlitePath := flag.String("sqlite-out", "", "Output SQLite database path. Defaults to <input>.sqlite")
+	csvPath := flag.String("csv-out", "", "Output DataFrame-friendly CSV path. Defaults to <input>.csv")
+	dbCLI := flag.String("db-cli", "", "Optional database CLI override. mysql export defaults to mysql; postgres export defaults to psql")
+	dbHost := flag.String("db-host", "127.0.0.1", "Database host for mysql/postgres export")
+	dbPort := flag.Int("db-port", 0, "Database port for mysql/postgres export. Defaults to 3306 for mysql and 5432 for postgres")
+	dbUser := flag.String("db-user", "", "Database user for mysql/postgres export")
+	dbPassword := flag.String("db-password", "", "Database password for mysql/postgres export")
+	dbName := flag.String("db-name", exporter.DefaultDatabaseName, "Database name for mysql/postgres export")
+	dbTable := flag.String("db-table", exporter.DefaultTableName, "Table name for mysql/postgres export")
+	mysqlSocket := flag.String("mysql-socket", "", "MySQL Unix socket path. If set, host/port are ignored")
+	pgMaintenanceDB := flag.String("pg-maintenance-db", "postgres", "PostgreSQL maintenance database used when auto-creating the target database")
+	pgSSLMode := flag.String("pg-sslmode", "", "Optional PostgreSQL SSL mode passed via PGSSLMODE")
 	flag.Parse()
 
-	if *cmdStr == "" {
-		log.Fatal("Error: -cmd parameter is required. Example: ./coroTracer -n 100 -cmd './redis-test'")
+	traceMode := strings.TrimSpace(*cmdStr) != ""
+	exportMode := strings.TrimSpace(*exportKind) != ""
+
+	if !traceMode && !exportMode {
+		log.Fatal("Error: either -cmd or -export is required. Example: ./coroTracer -cmd './redis-test' or ./coroTracer -export sqlite -in trace_output.jsonl")
+	}
+
+	if traceMode && exportMode {
+		log.Fatal("Error: -cmd and -export cannot be used together. Use -cmd only to collect JSONL, or use -export only to convert an existing JSONL file.")
+	}
+
+	if exportMode {
+		exportInput := resolveExportInput(*inputPath, *logPath)
+		if err := runExport(strings.TrimSpace(*exportKind), exportInput, exportConfig{
+			sqlitePath:      *sqlitePath,
+			csvPath:         *csvPath,
+			dbCLI:           *dbCLI,
+			dbHost:          *dbHost,
+			dbPort:          *dbPort,
+			dbUser:          *dbUser,
+			dbPassword:      *dbPassword,
+			dbName:          *dbName,
+			dbTable:         *dbTable,
+			mysqlSocket:     *mysqlSocket,
+			pgMaintenanceDB: *pgMaintenanceDB,
+			pgSSLMode:       *pgSSLMode,
+		}); err != nil {
+			log.Fatalf("Export failed: %v", err)
+		}
+		fmt.Println("✅ Export finished successfully.")
+		return
 	}
 
 	fmt.Printf("🚀 coroTracer Launcher Started\n")
@@ -78,4 +124,82 @@ func main() {
 	}
 
 	fmt.Println("✅ Target command finished successfully. coroTracer exiting.")
+}
+
+type exportConfig struct {
+	sqlitePath      string
+	csvPath         string
+	dbCLI           string
+	dbHost          string
+	dbPort          int
+	dbUser          string
+	dbPassword      string
+	dbName          string
+	dbTable         string
+	mysqlSocket     string
+	pgMaintenanceDB string
+	pgSSLMode       string
+}
+
+func runExport(kind, inputPath string, cfg exportConfig) error {
+	exportType := strings.ToLower(strings.TrimSpace(kind))
+
+	switch exportType {
+	case "sqlite":
+		output := cfg.sqlitePath
+		if strings.TrimSpace(output) == "" {
+			output = deriveOutputPath(inputPath, ".sqlite")
+		}
+		fmt.Printf("📤 Exporting %s -> SQLite %s\n", inputPath, output)
+		return exporter.ExportJSONLToSQLite(inputPath, output)
+	case "dataframe", "csv":
+		output := cfg.csvPath
+		if strings.TrimSpace(output) == "" {
+			output = deriveOutputPath(inputPath, ".csv")
+		}
+		fmt.Printf("📤 Exporting %s -> CSV %s\n", inputPath, output)
+		return exporter.ExportJSONLToDataFrameCSV(inputPath, output)
+	case "mysql":
+		fmt.Printf("📤 Exporting %s -> MySQL %s.%s\n", inputPath, cfg.dbName, cfg.dbTable)
+		return exporter.ExportJSONLToMySQL(inputPath, exporter.MySQLExportOptions{
+			Command:  cfg.dbCLI,
+			Host:     cfg.dbHost,
+			Port:     cfg.dbPort,
+			User:     cfg.dbUser,
+			Password: cfg.dbPassword,
+			Socket:   cfg.mysqlSocket,
+			Database: cfg.dbName,
+			Table:    cfg.dbTable,
+		})
+	case "postgres", "postgresql":
+		fmt.Printf("📤 Exporting %s -> PostgreSQL %s.%s\n", inputPath, cfg.dbName, cfg.dbTable)
+		return exporter.ExportJSONLToPostgreSQL(inputPath, exporter.PostgreSQLExportOptions{
+			Command:       cfg.dbCLI,
+			Host:          cfg.dbHost,
+			Port:          cfg.dbPort,
+			User:          cfg.dbUser,
+			Password:      cfg.dbPassword,
+			Database:      cfg.dbName,
+			Table:         cfg.dbTable,
+			MaintenanceDB: cfg.pgMaintenanceDB,
+			SSLMode:       cfg.pgSSLMode,
+		})
+	default:
+		return fmt.Errorf("unsupported export target %q", kind)
+	}
+}
+
+func resolveExportInput(inputPath, defaultLogPath string) string {
+	if strings.TrimSpace(inputPath) != "" {
+		return inputPath
+	}
+	return defaultLogPath
+}
+
+func deriveOutputPath(inputPath, ext string) string {
+	base := strings.TrimSuffix(inputPath, filepath.Ext(inputPath))
+	if strings.TrimSpace(base) == "" || base == "." {
+		return "trace_output" + ext
+	}
+	return base + ext
 }
