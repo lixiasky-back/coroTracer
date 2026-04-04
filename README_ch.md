@@ -102,13 +102,17 @@ Go 引擎负责：
 
 注意这里是 **已有 JSONL 的二次导出**，不是“边采集边转数据库”。
 
-### 3. C++20 SDK
+### 3. SDK
 
 当前提供了一个 C++20 头文件版 SDK：
 
 - [SDK/c++/coroTracer.h](SDK/c++/coroTracer.h)
 
-它的职责是：
+同时也提供了一个不依赖框架、基于 Rust poll 模型的 SDK：
+
+- [SDK/rust](SDK/rust)
+
+它们的职责是：
 
 - 连接共享内存
 - 连接 UDS
@@ -389,17 +393,18 @@ SDK 会在内部记录 `await_suspend` / `await_resume` 对应的状态切换。
 
 它不再包含以前那种“内置报告生成器 / 页面分析器”的路线。
 
-### 2. 这个仓库当前重点是 C++20 SDK
+### 2. 这个仓库当前重点是 C++20 / Rust SDK
 
-虽然协议本身是语言无关的，但当前仓库里正式给出的 SDK 还是 C++20。
+虽然协议本身是语言无关的，但当前仓库里正式给出的 SDK 包括：
 
-Rust、Zig、C 理论上都能做，因为底层依赖的是：
+- C++20 coroutine 接入
+- Rust `Future::poll` 接入
+
+Zig、C 理论上也都能做，因为底层依赖的是：
 
 - `mmap`
 - 固定 ABI 布局
 - 原子读写契约
-
-后续可能会提供rust的sdk.
 
 ### 3. 运行时外部依赖
 
@@ -423,6 +428,7 @@ Rust、Zig、C 理论上都能做，因为底层依赖的是：
 - [structure/jsonl.go](structure/jsonl.go)：JSONL 落盘
 - [export/](export/)：SQLite / MySQL / PostgreSQL / CSV 导出
 - [SDK/c++/coroTracer.h](SDK/c++/coroTracer.h)：C++20 SDK
+- [SDK/rust/](SDK/rust/)：Rust poll 模型 SDK
 - [docs/cTP.md](docs/cTP.md)：内存协议文档
 - [proof/proof.lean](./proof/proof.lean)：Lean 4 证明
 - [proof.md](./proof/proof.md)：中文证明详解

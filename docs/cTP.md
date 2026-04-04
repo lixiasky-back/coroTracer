@@ -111,7 +111,7 @@ To prevent the Go engine from spinning the CPU idly (Busy Wait) during business 
 
 ## 5. Cross-Language Implementation Reference (FFI Guide)
 
-> Note: A Rust SDK will be provided later, aiming to make the experience as close as possible to the minor changes required for C++. Other languages are pending (e.g., Zig is currently unstable).
+> Note: The repository now ships a framework-free Rust poll-model SDK under `SDK/rust`, aiming to keep the integration as close as possible to the small change surface of the C++ SDK. Other languages are still pending (e.g., Zig is currently unstable).
 
 ### Rust Language Implementation Mapping Reference (Pseudocode)
 In Rust, `#[repr(C)]` and `#[repr(align(X))]` must be strictly used.

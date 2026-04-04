@@ -102,13 +102,17 @@ The repository now includes an `export/` directory that supports converting an *
 This is explicitly a **second-stage export** from an existing JSONL trace.  
 It is not "trace and write to a database at the same time."
 
-### 3. C++20 SDK
+### 3. SDKs
 
 The repository currently ships a C++20 header-only SDK:
 
 - [SDK/c++/coroTracer.h](./SDK/c++/coroTracer.h)
 
-Its responsibilities are:
+It also now ships a framework-free Rust poll-model SDK:
+
+- [SDK/rust](./SDK/rust)
+
+Their responsibilities are:
 
 - attaching to shared memory
 - attaching to the UDS wakeup channel
@@ -391,17 +395,18 @@ What it provides today is:
 
 It no longer follows the old built-in "report generator / HTML analyzer" direction.
 
-### 2. The Current Focus Is the C++20 SDK
+### 2. The Current Focus Is the C++20 / Rust SDKs
 
-Although the protocol itself is language-agnostic, the SDK currently shipped in this repository is C++20.
+Although the protocol itself is language-agnostic, the repository currently ships official SDKs for:
 
-Rust, Zig, and C are all possible in principle because the foundation only depends on:
+- C++20 coroutine integration
+- Rust `Future::poll` integration
+
+Zig and C are still possible in principle because the foundation only depends on:
 
 - `mmap`
 - fixed ABI layout
 - atomic read/write discipline
-
-A Rust SDK may be added later.
 
 ### 3. Runtime External Dependencies
 
@@ -425,6 +430,7 @@ The most important files and directories right now are:
 - [structure/jsonl.go](structure/jsonl.go): JSONL output
 - [export/](export/): SQLite / MySQL / PostgreSQL / CSV export
 - [SDK/c++/coroTracer.h](SDK/c++/coroTracer.h): C++20 SDK
+- [SDK/rust/](SDK/rust/): Rust poll-model SDK
 - [docs/cTP.md](docs/cTP.md): memory protocol documentation
 - [proof/proof.lean](./proof/proof.lean): Lean 4 proof
 - [proof.md](./proof/proof.md): detailed Chinese proof walkthrough

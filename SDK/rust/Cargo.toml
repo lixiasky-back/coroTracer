@@ -1,0 +1,10 @@
+[package]
+name = "corotracer"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Framework-free Rust poll-model SDK for coroTracer"
+
+[lib]
+name = "corotracer"
+path = "src/lib.rs"
