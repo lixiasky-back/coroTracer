@@ -436,6 +436,82 @@ Zig、C 理论上也都能做，因为底层依赖的是：
 
 ---
 
+## 测试
+
+测试套件完全自动化，一条命令覆盖所有层：
+
+```bash
+bash tests/run_tests.sh
+```
+
+### 脚本执行内容
+
+| 阶段 | 内容 |
+|---|---|
+| 1 | Go 单元测试 — `go test -race ./...`，覆盖全部包 |
+| 2 | Rust SDK 单元测试 — `cargo test`（`SDK/rust/`） |
+| 3 | 编译 Go tracer 二进制 |
+| 4 | 编译 Rust 集成测试 tracee |
+| 5 | Rust tracee 单元测试 — `cargo test`（`tests/rust_tracee/`） |
+| 6 | **集成运行** — Go 引擎 + Rust tracee 跑 12 个异步场景 |
+| 7 | JSONL 不变量校验（SeqLock 偶数 seq、addr 格式、两种事件类型、纳秒时钟） |
+| 8 | CSV 导出回路验证 |
+| 9 | SQLite 导出回路验证 *（`sqlite3` 不在 PATH 时自动跳过）* |
+
+### Go 单元测试覆盖范围
+
+- `structure/` — `GlobalHeader` / `Epoch` / `StationData` 尺寸与字段偏移、SeqLock `Harvest` 全路径（空站、单写、不重复读、奇数 seq 跳过、撕裂读丢弃、环形缓冲回绕）
+- `engine/` — `TracerEngine` 初始化、shm 文件大小、有/无数据时的 `doScan`、分配计数截断
+- `export/` — `StreamJSONL`（所有边界情况）、CSV 导出、SQLite 导出、schema SQL 生成、所有 escape / quote 辅助函数
+- `main` — `deriveOutputPath`、`resolveExportInput`
+
+### Rust 单元测试覆盖范围
+
+- `SDK/rust/`（3 个）— 协议布局编译期断言、`TracedFuture` poll 语义、`Send` 约束
+- `tests/rust_tracee/`（14 个）— `PollTrace` 生命周期（new、pending/resume 循环、幂等 mark-dead、drop）、`TracedFuture` 输出保留与 Pending 语义、`Send` 约束、多线程并发 future
+
+### 集成测试场景（Rust tracee）
+
+12 个异步场景在 Go 引擎下端到端运行：
+
+1. 单次 sleep
+2. 20 个并发任务
+3. 同一 future 多次挂起
+4. Oneshot channel 生产者/消费者
+5. mpsc channel（N 个生产者、1 个消费者）
+6. Barrier 汇合点
+7. `yield_now` 挂起
+8. 混合 active/suspend 事件
+9. 压力测试 — 100 个并发任务
+10. 嵌套 future 链
+11. `PollTrace` 低级 API
+12. `TracedFuture` 完成前被 drop
+
+### 依赖说明
+
+| 依赖 | 用途 |
+|---|---|
+| Go 工具链 | Go 编译 + 单元测试 |
+| Rust / cargo | Rust SDK 测试 + tracee 编译 |
+| `sqlite3` 二进制 | 阶段 9（SQLite 导出）— 可选 |
+
+### 输出文件
+
+所有日志和生成文件都在 `tests/output/`：
+
+```
+tests/output/
+  trace.jsonl          # 原始采集事件
+  trace.csv            # CSV 导出结果
+  trace.sqlite         # SQLite 导出结果（有 sqlite3 时）
+  go_unit_tests.log
+  rust_sdk_tests.log
+  rust_tracee_tests.log
+  integration_run.log
+```
+
+---
+
 ## 联系方式
 
 > lixia.chat@outlook.com

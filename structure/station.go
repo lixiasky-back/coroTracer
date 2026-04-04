@@ -12,7 +12,7 @@ type GlobalHeader struct {
 	MaxStations    uint32     // 0x0C
 	AllocatedCount uint32     // 0x10
 	TracerSleeping uint32     // 0x14
-	_              [1004]byte // 🔴 1024 - 20 = 1004. Hard padding, reject C++ implicit padding
+	_              [1000]byte // 🔴 1024 - 24 = 1000. Hard padding, matches C++ _reserved[1000] and Rust [u8;1000]
 }
 
 // Epoch strictly occupies 64 bytes, matching the CPU Cache Line

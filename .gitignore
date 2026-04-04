@@ -1,4 +1,20 @@
-.idea
-coroTracer
+# IDE
+.idea/
+
+# macOS metadata
+.DS_Store
 .Ds_Store
-./SDK/rust/target/*
+
+# Go compiled binary
+coroTracer
+
+# Rust build artefacts
+SDK/rust/target/
+tests/rust_tracee/target/
+
+# Test run output (logs, traces, exports)
+tests/output/
+
+# SQLite WAL-mode temp files
+*.sqlite-shm
+*.sqlite-wal

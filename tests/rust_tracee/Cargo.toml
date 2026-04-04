@@ -1,0 +1,13 @@
+[package]
+name = "rust_tracee"
+version = "0.1.0"
+edition = "2021"
+description = "Integration test tracee binary for coroTracer"
+
+[[bin]]
+name = "rust_tracee"
+path = "src/main.rs"
+
+[dependencies]
+corotracer = { path = "../../SDK/rust" }
+tokio = { version = "1", features = ["full"] }

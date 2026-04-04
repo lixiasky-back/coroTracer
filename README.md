@@ -438,6 +438,82 @@ The most important files and directories right now are:
 
 ---
 
+## Testing
+
+The test suite is fully automated. A single shell script covers all layers:
+
+```bash
+bash tests/run_tests.sh
+```
+
+### What it runs
+
+| Phase | Content |
+|---|---|
+| 1 | Go unit tests — `go test -race ./...` across all packages |
+| 2 | Rust SDK unit tests — `cargo test` in `SDK/rust/` |
+| 3 | Build the Go tracer binary |
+| 4 | Build the Rust integration tracee |
+| 5 | Rust tracee unit tests — `cargo test` in `tests/rust_tracee/` |
+| 6 | **Integration run** — Go engine + Rust tracee under `coroTracer`, 12 async scenarios |
+| 7 | JSONL output invariant checks (SeqLock even-seq, addr format, both event types, nanosecond clock) |
+| 8 | CSV export round-trip |
+| 9 | SQLite export round-trip *(skipped automatically if `sqlite3` is not in PATH)* |
+
+### Go unit test coverage
+
+- `structure/` — `GlobalHeader` / `Epoch` / `StationData` sizes and offsets, all SeqLock `Harvest` paths (empty, single write, no-repeat, odd-seq skip, torn-read discard, ring wrap)
+- `engine/` — `TracerEngine` init, shm file size, `doScan` with/without data, clamped allocation count
+- `export/` — `StreamJSONL` (all edge cases), CSV export, SQLite export, schema SQL, all escape / quote helpers
+- `main` — `deriveOutputPath`, `resolveExportInput`
+
+### Rust unit test coverage
+
+- `SDK/rust/` (3 tests) — protocol layout compile-time assertions, `TracedFuture` poll semantics, `Send` bounds
+- `tests/rust_tracee/` (14 tests) — `PollTrace` lifecycle (new, pending/resume cycle, idempotent mark-dead, drop), `TracedFuture` output preservation and pending semantics, `Send` bounds, multi-thread concurrent futures
+
+### Integration scenarios (Rust tracee)
+
+12 async scenarios are run end-to-end under the Go engine:
+
+1. Single sleep
+2. 20 concurrent tasks
+3. Multiple suspensions in one future
+4. Oneshot channel producer/consumer
+5. mpsc channel (N producers, 1 consumer)
+6. Barrier rendezvous
+7. `yield_now` suspensions
+8. Mixed active/suspend events
+9. Stress — 100 concurrent tasks
+10. Nested future chain
+11. `PollTrace` low-level API
+12. `TracedFuture` dropped before completion
+
+### Dependencies
+
+| Requirement | Needed for |
+|---|---|
+| Go toolchain | Go build + unit tests |
+| Rust / cargo | Rust SDK tests + tracee build |
+| `sqlite3` binary | Phase 9 (SQLite export) — optional |
+
+### Output artefacts
+
+All logs and generated files land in `tests/output/`:
+
+```
+tests/output/
+  trace.jsonl          # raw captured events
+  trace.csv            # CSV export
+  trace.sqlite         # SQLite export (if sqlite3 available)
+  go_unit_tests.log
+  rust_sdk_tests.log
+  rust_tracee_tests.log
+  integration_run.log
+```
+
+---
+
 ## Contact
 
 > lixia.chat@outlook.com
